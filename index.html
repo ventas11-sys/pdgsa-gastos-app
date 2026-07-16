@@ -1131,6 +1131,11 @@ function actionsFor(req){
     acts.push({ id:'pagar',           label:'Marcar como pagado', style:'primary' });
     acts.push({ id:'rechazar_teso',   label:'Rechazar pago',      style:'danger' });
   }
+  // Super Admin puede eliminar cualquier gasto sin importar estado / dueño
+  const alreadyHasDelete = mine && req.status==='borrador';
+  if(isSuper() && !alreadyHasDelete){
+    acts.push({ id:'eliminar_super', label:'🗑 Eliminar definitivamente (Super Admin)', style:'danger' });
+  }
   return acts;
 }
 
@@ -1263,6 +1268,11 @@ function actionsForFund(f){
   }
   if(isContab() && f.status==='justificado'){
     acts.push({ id:'fund_saldar', label:'Cerrar balance (saldar)', style:'primary' });
+  }
+  // Super Admin puede eliminar cualquier solicitud de fondos sin importar estado / dueño
+  const alreadyHasDelete = mine && f.status==='borrador';
+  if(isSuper() && !alreadyHasDelete){
+    acts.push({ id:'fund_eliminar_super', label:'🗑 Eliminar definitivamente (Super Admin)', style:'danger' });
   }
   return acts;
 }
@@ -2202,8 +2212,12 @@ async function runAction(id, act){
   const r = state.requests.find(x=>x.id===id);
   if(!r) return;
   if(act==='editar'){ editExistingRequest(r); return; }
-  if(act==='eliminar'){
-    if(!confirm('¿Eliminar este borrador definitivamente?')) return;
+  if(act==='eliminar' || act==='eliminar_super'){
+    const isSuperDelete = act==='eliminar_super';
+    const msg = isSuperDelete
+      ? `⚠️ Vas a eliminar DEFINITIVAMENTE el gasto ${r.number||r.id} (estado: ${STATUS_META[r.status]?.label||r.status}), sus adjuntos y su historial. Esta acción NO se puede deshacer. ¿Confirmar?`
+      : '¿Eliminar este borrador definitivamente?';
+    if(!confirm(msg)) return;
     showLoader();
     const atts = state.attachments.filter(a=>a.expense_id===id);
     for(const a of atts){
@@ -2215,8 +2229,8 @@ async function runAction(id, act){
     state.events = state.events.filter(e=>e.expense_id!==id);
     saveState();
     hideLoader();
-    toast('Borrador eliminado','ok');
-    go('mis');
+    toast(isSuperDelete ? 'Gasto eliminado (Super Admin)' : 'Borrador eliminado','ok');
+    go(isSuperDelete ? (canReviewAny() ? 'bandeja' : 'mis') : 'mis');
     return;
   }
   if(act==='enviar'){
@@ -4207,14 +4221,26 @@ async function runFundAction(id, act){
   const f = (state.fundRequests||[]).find(x=>x.id===id);
   if(!f) return;
   if(act==='fund_editar'){ editExistingFund(f); return; }
-  if(act==='fund_eliminar'){
-    if(!confirm('¿Eliminar este borrador definitivamente?')) return;
+  if(act==='fund_eliminar' || act==='fund_eliminar_super'){
+    const isSuperDelete = act==='fund_eliminar_super';
+    const linkedCount = state.requests.filter(r => r.fund_request_id === id).length;
+    const msg = isSuperDelete
+      ? `⚠️ Vas a eliminar DEFINITIVAMENTE la solicitud de fondos ${f.number||f.id} (estado: ${STATUS_META[f.status]?.label||f.status}) y su historial.${linkedCount?`\n\nLos ${linkedCount} gasto${linkedCount>1?'s':''} justificativo${linkedCount>1?'s':''} vinculado${linkedCount>1?'s':''} quedarán DESVINCULADOS (no se borran).`:''}\n\nEsta acción NO se puede deshacer. ¿Confirmar?`
+      : '¿Eliminar este borrador definitivamente?';
+    if(!confirm(msg)) return;
     showLoader();
+    // Desvincular gastos previamente vinculados a este fondo (en super delete)
+    if(isSuperDelete && linkedCount){
+      for(const r of state.requests.filter(r => r.fund_request_id === id)){
+        try{ await cloud.updateRequest(r.id, { fund_request_id: null }); }catch(e){}
+        r.fund_request_id = null;
+      }
+    }
     await cloud.deleteFundRequest(id);
     state.fundRequests = state.fundRequests.filter(x=>x.id!==id);
     saveState();
     hideLoader();
-    toast('Borrador eliminado','ok');
+    toast(isSuperDelete ? 'Solicitud de fondos eliminada (Super Admin)' : 'Borrador eliminado','ok');
     go('fondos');
     return;
   }

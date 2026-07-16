@@ -524,6 +524,106 @@ const PAYMENT_METHODS = [
   { id:'yappy',    label:'Yappy' }
 ];
 
+// Campos estructurados por medio de pago
+const PAYMENT_FIELDS = {
+  tarjeta: [],
+  efectivo: [],
+  ach: [
+    { id:'bank',           label:'Banco',              required:true,  placeholder:'Ej: Banco General, BAC, Banistmo' },
+    { id:'account_type',   label:'Tipo de cuenta',     required:true,  type:'select', options:[
+      { value:'ahorro',    label:'Caja de ahorro' },
+      { value:'corriente', label:'Cuenta corriente' }
+    ]},
+    { id:'account_number', label:'Número de cuenta',   required:true,  placeholder:'Ej: 04-01-01-123456-7' },
+    { id:'holder',         label:'Titular de la cuenta', required:true, placeholder:'Nombre completo del titular' }
+  ],
+  cheque: [
+    { id:'bank',   label:'Banco emisor',    required:false, placeholder:'Ej: Banco General' },
+    { id:'holder', label:'A nombre de',     required:true,  placeholder:'Beneficiario del cheque' }
+  ],
+  yappy: [
+    { id:'phone',  label:'Número de teléfono (Yappy)', required:true, type:'tel', placeholder:'Ej: 6123-4567' },
+    { id:'holder', label:'Titular (opcional)',         required:false, placeholder:'Nombre asociado al Yappy' }
+  ]
+};
+
+// Renderiza los campos según el medio de pago elegido.
+// prefix: 'w' para wizard de gasto, 'fw' para wizard de fondos, 'sd' para saldo, etc.
+function renderPaymentDetailFields(prefix, method, saved){
+  const fields = PAYMENT_FIELDS[method] || [];
+  if(fields.length === 0) return '';
+  saved = saved || {};
+  return `<div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">${
+    fields.map(f => {
+      const val = saved[f.id] || '';
+      const req = f.required ? '<span class="req">*</span>' : '';
+      const inputStyle = f.id==='bank' || f.id==='holder' || f.id==='account_number' ? 'style="grid-column:span 2"' : '';
+      if(f.type === 'select'){
+        return `<div class="field" ${inputStyle}>
+          <label>${esc(f.label)} ${req}</label>
+          <select class="select" id="${prefix}-pd-${f.id}">
+            <option value="">— Elegí —</option>
+            ${f.options.map(o=>`<option value="${esc(o.value)}" ${val===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
+          </select>
+        </div>`;
+      }
+      return `<div class="field" ${inputStyle}>
+        <label>${esc(f.label)} ${req}</label>
+        <input class="input" type="${f.type||'text'}" id="${prefix}-pd-${f.id}" value="${esc(val)}" placeholder="${esc(f.placeholder||'')}">
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+// Recolecta los detalles: devuelve { details, text, error? }
+function collectPaymentDetails(prefix, method){
+  const fields = PAYMENT_FIELDS[method] || [];
+  const details = {};
+  for(const f of fields){
+    const el = document.getElementById(`${prefix}-pd-${f.id}`);
+    details[f.id] = el ? (el.value||'').trim() : '';
+  }
+  for(const f of fields){
+    if(f.required && !details[f.id]){
+      return { error: 'Falta: ' + f.label, details };
+    }
+  }
+  return { details, text: formatPaymentText(method, details) };
+}
+
+function formatPaymentText(method, d){
+  d = d || {};
+  if(method === 'ach'){
+    const type = d.account_type === 'ahorro' ? 'Caja de ahorro'
+               : d.account_type === 'corriente' ? 'Cuenta corriente' : '';
+    return [d.bank, type, d.account_number, d.holder].filter(Boolean).join(' · ');
+  }
+  if(method === 'cheque'){
+    return [d.bank, d.holder ? 'A nombre de '+d.holder : ''].filter(Boolean).join(' · ');
+  }
+  if(method === 'yappy'){
+    return [d.phone ? 'Yappy '+d.phone : '', d.holder].filter(Boolean).join(' · ');
+  }
+  return '';
+}
+
+// Renderiza los detalles en modo solo-lectura (para el detail view)
+function renderPaymentDetailsReadonly(method, details){
+  const fields = PAYMENT_FIELDS[method] || [];
+  if(fields.length === 0) return '';
+  details = details || {};
+  const rows = fields.map(f => {
+    let v = details[f.id] || '';
+    if(f.type === 'select'){
+      const opt = (f.options||[]).find(o=>o.value===v);
+      v = opt?.label || v;
+    }
+    if(!v) return '';
+    return `<div class="detail-row"><span class="k">${esc(f.label)}</span><span class="v">${esc(v)}</span></div>`;
+  }).filter(Boolean).join('');
+  return rows;
+}
+
 /* ============================================================
    MODO DEMO / OFFLINE
    ============================================================
@@ -1703,10 +1803,8 @@ function renderWizStep1(){
           ${PAYMENT_METHODS.map(m=>`<option value="${m.id}" ${wizardDraft.payment_method===m.id?'selected':''}>${m.label}</option>`).join('')}
         </select>
       </div>
-      <div class="field" id="w-bank-wrap">
-        <label>Cuenta bancaria / Referencia</label>
-        <input type="text" class="input" id="w-bank" value="${esc(wizardDraft.bank_account||'')}" placeholder="Banco, número de cuenta, o beneficiario">
-        <div class="hint">Requerido para ACH, cheque y Yappy.</div>
+      <div id="w-bank-wrap">
+        ${renderPaymentDetailFields('w', wizardDraft.payment_method, wizardDraft.data?.payment_details)}
       </div>
     </div>
   `;
@@ -1718,13 +1816,11 @@ function renderWizStep1(){
   $('#w-net').oninput = recalc;
   $('#w-itbms').oninput = recalc;
   recalc();
-  const toggleBank = ()=>{
+  const rerenderBank = ()=>{
     const m = $('#w-method').value;
-    const needs = ['ach','cheque','yappy'].includes(m);
-    $('#w-bank-wrap').classList.toggle('hidden', !needs);
+    $('#w-bank-wrap').innerHTML = renderPaymentDetailFields('w', m, wizardDraft.data?.payment_details);
   };
-  $('#w-method').onchange = toggleBank;
-  toggleBank();
+  $('#w-method').onchange = rerenderBank;
 }
 function collectStep1(){
   wizardDraft.provider_name = $('#w-prov').value.trim();
@@ -1734,13 +1830,13 @@ function collectStep1(){
   wizardDraft.itbms         = parseFloat($('#w-itbms').value||0);
   wizardDraft.total         = +(wizardDraft.net_amount + wizardDraft.itbms).toFixed(2);
   wizardDraft.payment_method= $('#w-method').value;
-  wizardDraft.bank_account  = $('#w-bank').value.trim();
+  const pd = collectPaymentDetails('w', wizardDraft.payment_method);
   if(!wizardDraft.provider_name) return 'Ingresá el proveedor';
   if(!(wizardDraft.net_amount>0)) return 'El monto neto debe ser mayor a 0';
   if(!wizardDraft.payment_method) return 'Elegí el medio de pago';
-  if(['ach','cheque','yappy'].includes(wizardDraft.payment_method) && !wizardDraft.bank_account){
-    return 'Ingresá la cuenta / referencia para ese medio de pago';
-  }
+  if(pd.error) return pd.error;
+  wizardDraft.data = { ...(wizardDraft.data||{}), payment_details: pd.details };
+  wizardDraft.bank_account = pd.text || '';
   return null;
 }
 
@@ -2100,7 +2196,8 @@ async function renderDetail(root, id){
       <div class="detail-row"><span class="k">ITBMS</span><span class="v">${fmtMoney(r.itbms)}</span></div>
       <div class="detail-row"><span class="k">Total</span><span class="v" style="color:var(--brand)">${fmtMoney(r.total)}</span></div>
       <div class="detail-row"><span class="k">Medio de pago</span><span class="v">${esc(PAYMENT_METHODS.find(m=>m.id===r.payment_method)?.label || '—')}</span></div>
-      ${r.bank_account?`<div class="detail-row"><span class="k">Cuenta / Ref.</span><span class="v">${esc(r.bank_account)}</span></div>`:''}
+      ${renderPaymentDetailsReadonly(r.payment_method, r.data?.payment_details)}
+      ${(!r.data?.payment_details && r.bank_account)?`<div class="detail-row"><span class="k">Cuenta / Ref.</span><span class="v">${esc(r.bank_account)}</span></div>`:''}
       ${r.paid_at?`<div class="detail-row"><span class="k">Pagado el</span><span class="v">${fmtDateTime(r.paid_at)}${r.payment_ref?'<br><small>Ref: '+esc(r.payment_ref)+'</small>':''}</span></div>`:''}
     </div>
 
@@ -2887,6 +2984,7 @@ const _reportState = {
   fromDate: '',
   toDate:   '',
   groupBy:  'colaborador',   // 'colaborador' | 'proyecto'
+  kind:     'ambos',         // 'gastos' | 'fondos' | 'ambos'
   requester:'',
   project:  '',
   company:  '',
@@ -2906,7 +3004,30 @@ function ensureReportDefaults(){
 
 function filteredReportRows(){
   const f = _reportState;
-  return state.requests.filter(r=>{
+  // Fila unificada:
+  //   _type: 'gasto' | 'fondo'
+  //   number, requester_id, requester_name, project_id, project_name,
+  //   company_id, company_name, payment_method, status, total, expense_date
+  //   (para fondos, total = requested_amount, expense_date = requested_date)
+  const rows = [];
+  if(f.kind === 'gastos' || f.kind === 'ambos'){
+    for(const r of state.requests){
+      rows.push({ ...r, _type:'gasto' });
+    }
+  }
+  if(f.kind === 'fondos' || f.kind === 'ambos'){
+    for(const g of (state.fundRequests||[])){
+      rows.push({
+        ...g,
+        _type: 'fondo',
+        total: Number(g.requested_amount || 0),
+        expense_date: g.requested_date,
+        description: g.purpose,
+        provider_name: '' // los fondos no tienen proveedor
+      });
+    }
+  }
+  return rows.filter(r=>{
     if(f.fromDate && (r.expense_date||'') < f.fromDate)   return false;
     if(f.toDate   && (r.expense_date||'') > f.toDate)     return false;
     if(f.requester&& r.requester_id !== f.requester)      return false;
@@ -2942,13 +3063,17 @@ function renderReports(root){
   const f = _reportState;
   const rows = filteredReportRows();
 
-  // KPIs
+  // KPIs — para fondos, "desembolsado" incluye pagado + justificado + saldado (el dinero ya salió)
+  const desembolsadoStatuses = new Set(['pagado','justificado','saldado']);
   const kpi = {
     total:      rows.length,
     montoTotal: rows.reduce((a,r)=>a+Number(r.total||0),0),
-    pagado:     rows.filter(r=>r.status==='pagado'),
+    pagado:     rows.filter(r=>desembolsadoStatuses.has(r.status)),
     pendiente:  rows.filter(r=>['borrador','enviado','corregir','aprobado_contabilidad'].includes(r.status)),
-    rechazado:  rows.filter(r=>['rechazado','rechazado_tesoreria'].includes(r.status))
+    rechazado:  rows.filter(r=>['rechazado','rechazado_tesoreria'].includes(r.status)),
+    // Breakdown por tipo (para mostrar gasto vs fondo)
+    gastos:     rows.filter(r=>r._type==='gasto'),
+    fondos:     rows.filter(r=>r._type==='fondo')
   };
   const sum = arr => arr.reduce((a,r)=>a+Number(r.total||0),0);
 
@@ -2981,6 +3106,11 @@ function renderReports(root){
         </div>
       </div>
       <div class="toggle-group">
+        <button class="${f.kind==='ambos'?'active':''}"  data-kind="ambos">Todo</button>
+        <button class="${f.kind==='gastos'?'active':''}" data-kind="gastos">Gastos</button>
+        <button class="${f.kind==='fondos'?'active':''}" data-kind="fondos">Fondos</button>
+      </div>
+      <div class="toggle-group" style="margin-top:8px">
         <button class="${f.groupBy==='colaborador'?'active':''}" data-gb="colaborador">Por colaborador</button>
         <button class="${f.groupBy==='proyecto'?'active':''}"    data-gb="proyecto">Por proyecto</button>
       </div>
@@ -3043,6 +3173,20 @@ function renderReports(root){
       </div>
     </div>
 
+    ${f.kind==='ambos' && (kpi.gastos.length || kpi.fondos.length) ? `
+    <div class="rep-kpis" style="margin-top:0">
+      <div class="rep-kpi" style="border-top-color:var(--brand);background:var(--brand-soft)">
+        <div class="amt" style="color:var(--brand-2)">${fmtMoney(sum(kpi.gastos))}</div>
+        <div class="lab">📄 Gastos (SP-)</div>
+        <div class="cnt">${kpi.gastos.length} · desembolsado ${fmtMoney(sum(kpi.gastos.filter(r=>desembolsadoStatuses.has(r.status))))}</div>
+      </div>
+      <div class="rep-kpi" style="border-top-color:#6366F1;background:color-mix(in srgb, #6366F1 8%, transparent)">
+        <div class="amt" style="color:#3730a3">${fmtMoney(sum(kpi.fondos))}</div>
+        <div class="lab">📦 Fondos (SF-)</div>
+        <div class="cnt">${kpi.fondos.length} · desembolsado ${fmtMoney(sum(kpi.fondos.filter(r=>desembolsadoStatuses.has(r.status))))}</div>
+      </div>
+    </div>` : ''}
+
     <div id="rep-groups"></div>
   `;
 
@@ -3059,6 +3203,11 @@ function renderReports(root){
     // limpiamos el filtro del "otro" eje para que no quede oculto y activo
     if(f.groupBy==='colaborador') f.project = '';
     if(f.groupBy==='proyecto')    f.requester = '';
+    f.openGroups = new Set();
+    renderReports(root);
+  });
+  $$('[data-kind]').forEach(b => b.onclick = ()=>{
+    f.kind = b.dataset.kind;
     f.openGroups = new Set();
     renderReports(root);
   });
@@ -3105,7 +3254,10 @@ function renderReportGroups(rows){
     else                      f.openGroups.add(key);
     renderReports($('#main'));
   });
-  cont.querySelectorAll('[data-open-req]').forEach(el => el.onclick = ()=> openDetail(el.dataset.openReq));
+  cont.querySelectorAll('[data-open]').forEach(el => el.onclick = ()=>{
+    if(el.dataset.type === 'fondo') openFundDetail(el.dataset.open);
+    else openDetail(el.dataset.open);
+  });
 }
 
 function countByStatus(rows){
@@ -3121,7 +3273,8 @@ function countByStatus(rows){
 
 function renderReportGroupCard(g){
   const isOpen = _reportState.openGroups.has(g.key);
-  const pagadoAmt = g.breakdown.pagado?.sum || 0;
+  // "Desembolsado" = pagado + justificado + saldado (fondos que ya salieron y quedaron)
+  const pagadoAmt = (g.breakdown.pagado?.sum||0) + (g.breakdown.justificado?.sum||0) + (g.breakdown.saldado?.sum||0);
   const pillsHtml = Object.keys(STATUS_META)
     .filter(k => (g.breakdown[k]?.count||0) > 0)
     .map(k => `<span class="pill badge-${k}">${STATUS_META[k].icon} ${STATUS_META[k].label} · ${g.breakdown[k].count}</span>`)
@@ -3131,9 +3284,12 @@ function renderReportGroupCard(g){
     .sort((a,b)=>(b.expense_date||'').localeCompare(a.expense_date||''))
     .map(r=>{
       const st = STATUS_META[r.status] || { label:r.status, icon:'' };
-      return `<div class="rep-item" data-open-req="${esc(r.id)}">
+      const typeChip = r._type==='fondo'
+        ? `<span style="background:#eef2ff;color:#3730a3;padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600">📦 SF</span>`
+        : `<span style="background:var(--brand-soft);color:var(--brand-2);padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600">📄 SP</span>`;
+      return `<div class="rep-item" data-open="${esc(r.id)}" data-type="${r._type}">
         <div>
-          <div class="title">${esc(r.description || r.provider_name || 'Solicitud')}</div>
+          <div class="title">${typeChip} ${esc(r.number||'')} · ${esc(r.description || r.provider_name || 'Solicitud')}</div>
           <div class="meta">
             <span class="badge badge-${r.status}">${st.icon} ${st.label}</span>
             <span>${fmtDate(r.expense_date)}</span>
@@ -3177,9 +3333,10 @@ function clearReportFilters(){
 function downloadReportCSV(){
   const rows = filteredReportRows();
   const headers = [
-    'Numero','Fecha gasto','Solicitante','Proyecto','Empresa PDG','RUC empresa',
+    'Tipo','Numero','Fecha','Solicitante','Proyecto','Empresa PDG','RUC empresa',
     'Proveedor','RUC proveedor','DV','Concepto',
-    'Monto neto','ITBMS','Total','Medio de pago','Cuenta/Ref',
+    'Monto neto','ITBMS','Total','Medio de pago',
+    'Banco','Tipo cuenta','Numero cuenta','Titular','Telefono Yappy','Cuenta/Ref texto',
     'Estado','Enviado el','Revisado el','Notas revisor','Pagado el','Ref pago'
   ];
   const csvEscape = v => {
@@ -3188,19 +3345,26 @@ function downloadReportCSV(){
   };
   const methodLabel = id => (PAYMENT_METHODS.find(m=>m.id===id)?.label || '');
   const statusLabel = id => (STATUS_META[id]?.label || id || '');
-  const body = rows.map(r=>[
-    r.number, r.expense_date, r.requester_name,
-    r.project_name, r.company_name, r.company_ruc,
-    r.provider_name, r.provider_ruc, r.provider_dv, r.description,
-    r.net_amount, r.itbms, r.total,
-    methodLabel(r.payment_method), r.bank_account,
-    statusLabel(r.status),
-    r.submitted_at ? fmtDateTime(r.submitted_at) : '',
-    r.reviewed_at  ? fmtDateTime(r.reviewed_at)  : '',
-    r.review_notes,
-    r.paid_at      ? fmtDateTime(r.paid_at)      : '',
-    r.payment_ref
-  ].map(csvEscape).join(','));
+  const accountTypeLabel = t => t==='ahorro'?'Caja de ahorro':t==='corriente'?'Cuenta corriente':'';
+  const body = rows.map(r=>{
+    const pd = r.data?.payment_details || {};
+    return [
+      r._type==='fondo'?'Fondo':'Gasto',
+      r.number, r.expense_date, r.requester_name,
+      r.project_name, r.company_name, r.company_ruc,
+      r.provider_name, r.provider_ruc, r.provider_dv, r.description,
+      r.net_amount, r.itbms, r.total,
+      methodLabel(r.payment_method),
+      pd.bank || '', accountTypeLabel(pd.account_type), pd.account_number || '', pd.holder || '', pd.phone || '',
+      r.bank_account,
+      statusLabel(r.status),
+      r.submitted_at ? fmtDateTime(r.submitted_at) : '',
+      r.reviewed_at  ? fmtDateTime(r.reviewed_at)  : '',
+      r.review_notes,
+      r.paid_at      ? fmtDateTime(r.paid_at)      : '',
+      r.payment_ref
+    ].map(csvEscape).join(',');
+  });
   const csv = '﻿' + headers.join(',') + '\n' + body.join('\n');
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -3975,7 +4139,8 @@ function renderFundDetail(root, id){
       <div class="detail-row"><span class="k">Monto solicitado</span><span class="v" style="color:var(--brand);font-weight:700">${fmtMoney(f.requested_amount)}</span></div>
       ${f.needed_by?`<div class="detail-row"><span class="k">Necesario para</span><span class="v">${fmtDate(f.needed_by)}</span></div>`:''}
       <div class="detail-row"><span class="k">Medio de pago</span><span class="v">${esc(PAYMENT_METHODS.find(m=>m.id===f.payment_method)?.label||'—')}</span></div>
-      ${f.bank_account?`<div class="detail-row"><span class="k">Cuenta / Ref.</span><span class="v">${esc(f.bank_account)}</span></div>`:''}
+      ${renderPaymentDetailsReadonly(f.payment_method, f.data?.payment_details)}
+      ${(!f.data?.payment_details && f.bank_account)?`<div class="detail-row"><span class="k">Cuenta / Ref.</span><span class="v">${esc(f.bank_account)}</span></div>`:''}
       ${f.paid_at?`<div class="detail-row"><span class="k">Fondos entregados</span><span class="v">${fmtDateTime(f.paid_at)}${f.payment_ref?'<br><small>Ref: '+esc(f.payment_ref)+'</small>':''}</span></div>`:''}
     </div>
 
@@ -4094,7 +4259,6 @@ function renderFundWizard(root){
     .map(c=>`<option value="${esc(c.id)}" ${c.id===d.company_id?'selected':''}>${esc(c.name)}</option>`).join('');
   const payOptions = PAYMENT_METHODS
     .map(m=>`<option value="${m.id}" ${m.id===d.payment_method?'selected':''}>${esc(m.label)}</option>`).join('');
-  const needsBank = ['ach','cheque','yappy'].includes(d.payment_method);
 
   root.innerHTML = `
     <div class="wizard">
@@ -4136,15 +4300,12 @@ function renderFundWizard(root){
             <input type="date" class="input" id="fw-needed" value="${esc(d.needed_by||'')}">
           </div>
         </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Medio de pago <span class="req">*</span></label>
-            <select class="select" id="fw-pay"><option value="">— Elegí —</option>${payOptions}</select>
-          </div>
-          <div class="field" id="fw-bank-field" style="${needsBank?'':'display:none'}">
-            <label>Cuenta bancaria / referencia ${needsBank?'<span class="req">*</span>':''}</label>
-            <input class="input" id="fw-bank" value="${esc(d.bank_account||'')}" placeholder="Ej: BAC 1234567 - Juan Pérez">
-          </div>
+        <div class="field">
+          <label>Medio de pago <span class="req">*</span></label>
+          <select class="select" id="fw-pay"><option value="">— Elegí —</option>${payOptions}</select>
+        </div>
+        <div id="fw-bank-field">
+          ${renderPaymentDetailFields('fw', d.payment_method, d.data?.payment_details)}
         </div>
       </div>
       <div class="wizard-foot" style="display:flex;gap:8px;padding:14px 0">
@@ -4155,9 +4316,7 @@ function renderFundWizard(root){
   `;
   const payEl = $('#fw-pay');
   payEl.onchange = ()=>{
-    const need = ['ach','cheque','yappy'].includes(payEl.value);
-    $('#fw-bank-field').style.display = need ? '' : 'none';
-    $('#fw-bank-field').querySelector('label').innerHTML = 'Cuenta bancaria / referencia ' + (need?'<span class="req">*</span>':'');
+    $('#fw-bank-field').innerHTML = renderPaymentDetailFields('fw', payEl.value, d.data?.payment_details);
   };
 }
 
@@ -4166,6 +4325,8 @@ function collectFundDraft(){
   const proj = state.projects.find(p=>p.id===projId);
   const compId = $('#fw-company').value;
   const comp = state.companies.find(c=>c.id===compId);
+  const method = $('#fw-pay').value;
+  const pd = collectPaymentDetails('fw', method);
   fundWizardDraft = {
     ...fundWizardDraft,
     purpose: $('#fw-purpose').value.trim(),
@@ -4173,8 +4334,10 @@ function collectFundDraft(){
     company_id: compId, company_name: comp?.name || '',
     requested_amount: parseFloat($('#fw-amount').value) || 0,
     needed_by: $('#fw-needed').value || null,
-    payment_method: $('#fw-pay').value,
-    bank_account: $('#fw-bank')?.value || ''
+    payment_method: method,
+    bank_account: pd.text || '',
+    data: { ...(fundWizardDraft.data||{}), payment_details: pd.details },
+    _pdError: pd.error || null
   };
   return fundWizardDraft;
 }
@@ -4185,7 +4348,7 @@ function validateFundDraft(d, forSubmit){
   if(!d.requested_amount || d.requested_amount <= 0) return 'Ingresá un monto mayor a 0';
   if(forSubmit){
     if(!d.payment_method) return 'Elegí un medio de pago';
-    if(['ach','cheque','yappy'].includes(d.payment_method) && !d.bank_account) return 'Falta la cuenta/referencia bancaria';
+    if(d._pdError) return d._pdError;
   }
   return null;
 }
@@ -4230,7 +4393,8 @@ async function persistFund(d, targetStatus){
       payment_method: d.payment_method || null,
       bank_account: d.bank_account || null,
       status: targetStatus,
-      submitted_at: targetStatus==='enviado' ? now : (existing?.submitted_at || null)
+      submitted_at: targetStatus==='enviado' ? now : (existing?.submitted_at || null),
+      data: { ...(existing?.data||{}), ...(d.data||{}) }
     };
     let saved;
     if(isNew){

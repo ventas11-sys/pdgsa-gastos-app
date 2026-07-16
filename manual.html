@@ -865,6 +865,7 @@ section[id] { scroll-margin-top: 24px; }
           <li><a class="sub" href="#cnt-rev">6.2 · Aprobar / corregir / rechazar</a></li>
           <li><a class="sub" href="#cnt-ok">6.3 · Marcar ítem OK</a></li>
           <li><a class="sub" href="#cnt-sald">6.4 · Cerrar balance</a></li>
+          <li><a class="sub" href="#cnt-rep">6.5 · Reportes y toggle</a></li>
         </ul>
       </li>
       <li>
@@ -904,6 +905,12 @@ section[id] { scroll-margin-top: 24px; }
         <div>Actualizado<strong>16 jul 2026</strong></div>
         <div>Público<strong>Equipo interno PDGSA</strong></div>
         <div>Plataforma<strong>Web + móvil (PWA)</strong></div>
+      </div>
+      <div style="margin-top:24px;padding:14px 16px;background:var(--brand-soft);border-radius:8px;font-size:13.5px;line-height:1.5;color:var(--ink-soft);">
+        <strong style="color:var(--brand-2);">Novedades incluidas en esta versión:</strong>
+        numeración diferenciada por tipo (SP · JF · SF), campos estructurados por medio de pago
+        (ACH con banco desplegable, tipo de cuenta, titular · Yappy con teléfono), reporte con
+        toggle para evitar doble conteo entre fondos y sus justificativos.
       </div>
     </header>
 
@@ -1028,19 +1035,81 @@ section[id] { scroll-margin-top: 24px; }
         Hay dos tipos de solicitudes y viven en tabs separadas dentro de la app. Entender la diferencia es lo único crítico para no equivocarse.
       </p>
 
-      <h3>Gasto <span style="color:var(--muted);font-weight:400;font-family:var(--sans);font-size:16px;">— la plata ya se gastó</span></h3>
-      <p>
-        Sale con el prefijo <code>SP-YYYYMM-NNNN</code>. Se usa cuando el colaborador ya pagó de su bolsillo (o con tarjeta corporativa) y ahora sube el <strong>recibo</strong> para que le reembolsen o para que quede registrado el gasto. Es el flujo tradicional.
-      </p>
+      <h3>Tres tipos, tres prefijos</h3>
+      <p>Cada solicitud nace con un prefijo que dice de qué tipo es y con qué numeración se cuenta. Cada prefijo tiene su propia secuencia mensual, así que podés tener al mismo tiempo <code>SF-202607-0001</code>, <code>SP-202607-0001</code> y <code>JF-202607-0001</code> sin conflicto.</p>
 
-      <h3>Solicitud de fondos <span style="color:var(--muted);font-weight:400;font-family:var(--sans);font-size:16px;">— la plata la piden por adelantado</span></h3>
-      <p>
-        Sale con el prefijo <code>SF-YYYYMM-NNNN</code>. Se usa cuando el colaborador necesita dinero <strong>antes</strong> de gastar (ej. comprar materiales para una obra). Después de recibir la plata, sube uno o más recibos que justifican en qué se usó y la app calcula el balance.
-      </p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Prefijo</th><th>Nombre completo</th><th>Cuándo se usa</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code style="color:var(--brand-2);font-weight:700">SP-YYYYMM-NNNN</code></td>
+              <td><strong>Solicitud de Pago</strong> (reembolso)</td>
+              <td>La plata ya salió del bolsillo del colaborador. Sube el recibo para que le reembolsen.</td>
+            </tr>
+            <tr>
+              <td><code style="color:#3730a3;font-weight:700">SF-YYYYMM-NNNN</code></td>
+              <td><strong>Solicitud de Fondos</strong></td>
+              <td>Pide plata por adelantado antes de gastar. Después justifica con recibos y la app calcula el balance.</td>
+            </tr>
+            <tr>
+              <td><code style="color:#155e75;font-weight:700">JF-YYYYMM-NNNN</code></td>
+              <td><strong>Justificativo de Fondo</strong></td>
+              <td>Un recibo que nace vinculado a un SF-. Es la explicación de en qué se gastó parte del fondo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <div class="callout tip">
         <div class="label">Regla simple</div>
-        <p><strong>¿La plata ya salió?</strong> Cargá un gasto (SP). <strong>¿Todavía no?</strong> Pedí fondos (SF) y después justificás con recibos.</p>
+        <p><strong>¿La plata ya salió del bolsillo del colaborador?</strong> → <code>SP-</code>. <strong>¿Todavía no se giró?</strong> → pedí un <code>SF-</code> y después cargá recibos como <code>JF-</code> para justificarlo.</p>
+      </div>
+
+      <div class="callout info">
+        <div class="label">Diferencia clave · SP vs JF</div>
+        <p>Un <strong>SP</strong> es un desembolso completo en un solo paso (colaborador puso plata, PDG reembolsa). Un <strong>JF</strong> es solo la explicación de en qué se gastó el dinero de un fondo — <em>no</em> es un desembolso nuevo, porque la plata ya salió cuando el fondo pasó a <code>pagado</code>. Por eso el reporte de "Desembolsos" no suma los JF (evitaría doble conteo).</p>
+      </div>
+
+      <h3>Datos que pide cada medio de pago</h3>
+      <p>Al elegir el medio de pago, la app despliega los campos específicos que corresponden. Nada de un textbox libre — cada campo con su etiqueta y validación:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:22%">Medio</th><th>Campos que se piden</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Tarjeta corporativa</strong></td><td>Sin campos adicionales — el gasto queda registrado con el medio.</td></tr>
+            <tr><td><strong>Efectivo</strong></td><td>Sin campos adicionales.</td></tr>
+            <tr>
+              <td><strong>ACH / Transferencia</strong></td>
+              <td>
+                <strong>Banco</strong> · autocompleta con la lista de bancos panameños (BAC, Banistmo, Banco General, Aliado, Mercantil, Multibank, etc.) — permite escribir uno nuevo si no está.<br>
+                <strong>Tipo de cuenta</strong> · dropdown: Caja de ahorro o Cuenta corriente.<br>
+                <strong>Número de cuenta</strong>.<br>
+                <strong>Titular</strong> · nombre completo del titular.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Cheque</strong></td>
+              <td>
+                <strong>Banco emisor</strong> · mismo autocompletar de bancos.<br>
+                <strong>A nombre de</strong> · beneficiario del cheque.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Yappy</strong></td>
+              <td>
+                <strong>Número de teléfono</strong> · obligatorio.<br>
+                <strong>Titular</strong> · opcional.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="label">Cómo funciona el autocompletar de bancos</div>
+        <p>El input de banco tiene un ícono desplegable (▼). Podés hacer clic para ver toda la lista, o empezar a escribir para que filtre. Si necesitás un banco que no está, seguí tipeando y se guarda como texto libre. En una próxima versión podés pedirle al Super Admin que lo agregue al catálogo.</p>
       </div>
 
       <h3>Balance de un fondo</h3>
@@ -1795,6 +1864,63 @@ section[id] { scroll-margin-top: 24px; }
         <div class="label">Queda registrado</div>
         <p>La nota de cierre se guarda con formato: <em>"PDG giró B/. 30.00 el 16 jul 2026 · ACH · Ref: BAC ACH 0012345"</em>. Los detalles del settlement quedan en la base de datos por si después necesitás un reporte.</p>
       </div>
+
+      <!-- 6.5 Reportes -->
+      <h3 id="cnt-rep"><span class="num">6.5</span> Reportes · el toggle para evitar doble conteo</h3>
+      <p>Desde la home (o el ícono de gráfico en la topbar) accedés a <strong>Reportes</strong>. Es la vista donde ves todo lo que salió por período, agrupado por colaborador o por proyecto.</p>
+
+      <p>Arriba de todo hay un <strong>toggle de cuatro botones</strong> — es la parte más importante de la pantalla porque decide qué se cuenta:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vista</th><th>Qué muestra</th><th>Cuándo usarla</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>💰 Desembolsos</strong><br><span style="color:var(--muted);font-size:12px">(default)</span></td>
+              <td>SP + SF · <strong>excluye JF</strong></td>
+              <td>La verdad contable — cuánta plata efectivamente salió de tesorería en el período. Es la vista para cualquier resumen ejecutivo.</td>
+            </tr>
+            <tr>
+              <td><strong>📄 Reembolsos SP</strong></td>
+              <td>Solo gastos SP</td>
+              <td>Ver solo lo que colaboradores adelantaron y PDG les devolvió. Útil para conciliar tarjetas corporativas o cajas chicas.</td>
+            </tr>
+            <tr>
+              <td><strong>📦 Fondos SF</strong></td>
+              <td>Solo solicitudes de fondos</td>
+              <td>Ver la lista de entregas por adelantado, con su balance de cierre. Auditar el ciclo pedir → pagar → justificar → saldar.</td>
+            </tr>
+            <tr>
+              <td><strong>🧾 Justificativos JF</strong></td>
+              <td>Solo justificativos</td>
+              <td>Ver a dónde fue la plata de los fondos ya pagados. Útil para responder "¿en qué gastó Yohana los B/. 500 del fondo?".</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout danger">
+        <div class="label">Por qué existe este toggle</div>
+        <p>Si sumáramos todo (SP + SF + JF), la plata se contaría dos veces: el fondo <code>SF-…</code> ya representa que salieron B/. 100 de tesorería. El justificativo <code>JF-…</code> de B/. 65 vinculado a ese fondo <strong>no es un desembolso nuevo</strong> — es solo la explicación de dónde fue parte de esos B/. 100. Por eso "Desembolsos" excluye los JF.</p>
+      </div>
+
+      <p>Debajo del toggle hay una leyenda que recuerda esto en cada modo. Y los KPIs de la fila de arriba se recalculan automáticamente según qué toggle esté activo.</p>
+
+      <h4>Filtros y agrupación</h4>
+      <p>Además del toggle de tipo tenés:</p>
+      <ul>
+        <li><strong>Rango de fechas</strong> · desde y hasta (por fecha del gasto o de la solicitud).</li>
+        <li><strong>Por colaborador</strong> vs <strong>Por proyecto</strong> · elige el eje de agrupación.</li>
+        <li>Filtros extra: empresa, medio de pago, estado.</li>
+      </ul>
+
+      <h4>Descargar CSV</h4>
+      <p>El botón "Descargar CSV" exporta lo que estés viendo, respetando el toggle. El CSV incluye:</p>
+      <ul>
+        <li>Columna <strong>Tipo</strong> · "Gasto (SP)", "Justificativo (JF)" o "Fondo (SF)".</li>
+        <li>Los <strong>campos separados</strong> del medio de pago: banco, tipo de cuenta, número, titular, teléfono Yappy.</li>
+        <li>Toda la información de auditoría (enviado, revisado, pagado, notas del revisor, referencias).</li>
+      </ul>
     </section>
 
     <!-- ══════════════════════════════════════════════
@@ -1932,6 +2058,36 @@ section[id] { scroll-margin-top: 24px; }
         <summary>Me equivoqué de tipo — cargué un gasto que en realidad es un fondo</summary>
         <div class="faq-body">
           <p>Si el gasto está en <code>borrador</code> o <code>corregir</code>, editalo desde su detalle. Si ya lo enviaste, pedile a Super Admin que lo elimine y volvés a cargarlo como fondo. No hay conversión automática — son entidades distintas.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>El reporte suma más de lo que efectivamente salió — ¿por qué?</summary>
+        <div class="faq-body">
+          <p>Estás en la vista equivocada. Si tenés un fondo <code>SF-…</code> de B/. 100 y le cargaste un justificativo <code>JF-…</code> de B/. 65, la vista "Todos los tipos" antigua los sumaba y daba B/. 165. Cambiá al toggle <strong>💰 Desembolsos</strong> (default) — solo suma SP + SF, sin JF. Ese es el total real que salió.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>¿Cuál es la diferencia entre SP, JF y SF?</summary>
+        <div class="faq-body">
+          <p><strong>SP</strong> = Solicitud de Pago. Reembolso al colaborador que ya puso plata. Un solo desembolso.</p>
+          <p><strong>SF</strong> = Solicitud de Fondos. Adelantar plata al colaborador para que gaste. El desembolso ocurre cuando pasa a <code>pagado</code>.</p>
+          <p><strong>JF</strong> = Justificativo de Fondo. Recibo que explica en qué se gastó parte de un SF. <em>No es</em> un desembolso nuevo.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>El banco que necesito no está en el dropdown de ACH</summary>
+        <div class="faq-body">
+          <p>Sin problema — el input es libre. Seguí tipeando el nombre completo y se guarda como texto. La app trae precargados los ~20 bancos más comunes de la plaza panameña, pero cualquier otro también funciona. Si un banco nuevo se vuelve recurrente, pedile al Super Admin que lo agregue al catálogo.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Los usuarios que ya cargué no muestran los campos de banco separados</summary>
+        <div class="faq-body">
+          <p>Correcto — los gastos y fondos creados antes de esta versión tienen el dato en una sola línea de texto ("<em>BAC 1234567 - Juan Pérez</em>") porque no existían campos separados. La app los muestra tal cual estaban. Los nuevos ya usan los campos estructurados y podés verlos separados en el CSV y en el detalle.</p>
         </div>
       </details>
 

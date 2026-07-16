@@ -3944,9 +3944,11 @@ function renderFundDetail(root, id){
         <span class="k" style="font-weight:700">Diferencia</span>
         <span class="v" style="font-weight:700;color:${bal.kind==='cuadrado'?'var(--ok)':bal.kind==='a_favor_pdg'?'var(--warn)':'var(--danger)'}">${bal.diff>0?'+':bal.diff<0?'−':''}${fmtMoney(Math.abs(bal.diff))}</span>
       </div>
-      <div class="summary-pill" style="margin-top:12px;background:${bal.kind==='cuadrado'?'#f0fdf4':bal.kind==='a_favor_pdg'?'#fffbeb':'#fef2f2'};color:${bal.kind==='cuadrado'?'var(--ok)':bal.kind==='a_favor_pdg'?'#92400e':'var(--danger)'}">
-        ${bm.icon} ${bm.label}
-        ${f.status==='saldado' && f.balance_notes ? `<span style="font-size:12px;font-weight:500">${esc(f.balance_notes)}</span>` : ''}
+      <div class="summary-pill" style="margin-top:12px;background:${bal.kind==='cuadrado'?'#f0fdf4':bal.kind==='a_favor_pdg'?'#fffbeb':'#fef2f2'};color:${bal.kind==='cuadrado'?'var(--ok)':bal.kind==='a_favor_pdg'?'#92400e':'var(--danger)'};display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <strong>${bm.icon} ${bm.label}</strong>
+        </div>
+        ${f.status==='saldado' && f.balance_notes ? `<div style="font-size:12px;font-weight:500;margin-top:8px;white-space:pre-line">${esc(f.balance_notes)}</div>` : ''}
       </div>
       ${f.status==='saldado' && f.balance_closed_at ? `<div class="detail-row" style="margin-top:8px"><span class="k">Cerrado</span><span class="v">${fmtDateTime(f.balance_closed_at)}</span></div>` : ''}
     </div>` : ''}
@@ -4248,14 +4250,14 @@ async function runFundAction(id, act){
     await changeFundStatus(f, 'enviado', 'enviar', null, { submitted_at: new Date().toISOString() });
     toast('Enviado a contabilidad','ok'); render(); return;
   }
+  if(act==='fund_saldar'){ openSaldoModal(f); return; }
   const promptMap = {
     fund_aprobar_contab:  { evt:'aprobar',       status:'aprobado_contabilidad', title:'Aprobar solicitud de fondos', note:'Observación (opcional)', required:false, patch:{ reviewed_by:session.user.id, reviewed_at:new Date().toISOString() } },
     fund_corregir:        { evt:'corregir',      status:'corregir',              title:'Solicitar corrección', note:'¿Qué debe corregirse?', required:true,  patch:{ reviewed_by:session.user.id, reviewed_at:new Date().toISOString() } },
     fund_rechazar_contab: { evt:'rechazar',      status:'rechazado',             title:'Rechazar solicitud',   note:'Motivo del rechazo', required:true, patch:{ reviewed_by:session.user.id, reviewed_at:new Date().toISOString() } },
     fund_pagar:           { evt:'pagar',         status:'pagado',                title:'Confirmar entrega de fondos', note:'Referencia/comprobante (opcional)', required:false, patch:{ paid_by:session.user.id, paid_at:new Date().toISOString() } },
     fund_rechazar_teso:   { evt:'rechazar_teso', status:'rechazado_tesoreria',   title:'Rechazar entrega',     note:'Motivo del rechazo', required:true, patch:{ paid_by:session.user.id, paid_at:new Date().toISOString() } },
-    fund_justificar:      { evt:'justificar',    status:'justificado',           title:'Cerrar carga de recibos', note:'Observación (opcional)', required:false, patch:{ justified_at:new Date().toISOString() } },
-    fund_saldar:          { evt:'saldar',        status:'saldado',               title:'Cerrar balance', note:'Comentario (ej: colaborador ya devolvió los B/. 32.50)', required:true, patch:{ balance_closed_by:session.user.id, balance_closed_at:new Date().toISOString() } }
+    fund_justificar:      { evt:'justificar',    status:'justificado',           title:'Cerrar carga de recibos', note:'Observación (opcional)', required:false, patch:{ justified_at:new Date().toISOString() } }
   };
   const cfg = promptMap[act];
   if(!cfg) return;
@@ -4285,6 +4287,122 @@ async function runFundAction(id, act){
     closeModal();
     await changeFundStatus(f, cfg.status, cfg.evt, note, patch);
     toast('Acción registrada','ok');
+    render();
+  };
+}
+
+function openSaldoModal(f){
+  const bal = computeBalance(f);
+  const bm = balanceMeta(bal.kind);
+  const isCuadrado = bal.kind === 'cuadrado';
+  const isAFavorPDG = bal.kind === 'a_favor_pdg';   // sobró plata al colaborador → devuelve
+  const isEnContraPDG = bal.kind === 'en_contra_pdg'; // faltó plata → PDG gira más
+  const diffAbs = Math.abs(bal.diff);
+  const accionTexto = isCuadrado
+    ? 'La cuenta ya cuadra. Podés cerrar directamente.'
+    : isAFavorPDG
+      ? `El colaborador debe <strong>devolver ${fmtMoney(diffAbs)}</strong> a PDG.`
+      : `PDG debe <strong>girar ${fmtMoney(diffAbs)}</strong> al colaborador para cubrir el faltante.`;
+  const labelMonto = isAFavorPDG ? 'Monto devuelto por el colaborador'
+                   : isEnContraPDG ? 'Monto girado por PDG (adicional)'
+                   : 'Monto liquidado';
+  const bgColor = isCuadrado ? '#f0fdf4' : isAFavorPDG ? '#fffbeb' : '#fef2f2';
+  const borderColor = isCuadrado ? 'var(--ok)' : isAFavorPDG ? 'var(--warn)' : 'var(--danger)';
+  const paymentOpts = PAYMENT_METHODS.map(m=>`<option value="${m.id}">${esc(m.label)}</option>`).join('');
+  openModal('Cerrar balance · '+(f.number||f.id), `
+    <div style="background:${bgColor};border-left:4px solid ${borderColor};padding:12px 14px;border-radius:10px;margin-bottom:14px">
+      <div style="font-weight:700;margin-bottom:6px">${bm.icon} ${bm.label}</div>
+      <div style="font-size:13px;color:var(--text)">
+        Solicitado: <strong>${fmtMoney(bal.requested)}</strong> ·
+        Justificado: <strong>${fmtMoney(bal.justified)}</strong>
+      </div>
+      <div style="font-size:13px;margin-top:4px">${accionTexto}</div>
+    </div>
+
+    ${!isCuadrado ? `
+    <div class="field">
+      <label>${esc(labelMonto)} <span class="req">*</span></label>
+      <div class="input-suffix">
+        <span class="unit">B/.</span>
+        <input type="number" step="0.01" min="0" class="input" id="sd-amount" value="${diffAbs.toFixed(2)}">
+      </div>
+      <div class="hint">Sugerido: ${fmtMoney(diffAbs)}. Editá si el monto real fue distinto.</div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Fecha del movimiento</label>
+        <input type="date" class="input" id="sd-date" value="${todayISO()}">
+      </div>
+      <div class="field">
+        <label>Método</label>
+        <select class="select" id="sd-method">
+          <option value="">— Elegí —</option>
+          ${paymentOpts}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Referencia / comprobante</label>
+      <input class="input" id="sd-ref" placeholder="Ej: ACH BAC 001234, cheque 5678, recibo 001">
+    </div>
+    ` : ''}
+
+    <div class="field">
+      <label>Nota (opcional)</label>
+      <textarea class="textarea" id="sd-note" placeholder="Cualquier detalle adicional..."></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="sd-btn">✅ Confirmar cierre de balance</button>
+  `);
+  $('#sd-btn').onclick = async ()=>{
+    const settlementAmount = isCuadrado ? 0 : parseFloat($('#sd-amount').value) || 0;
+    const settlementDate   = isCuadrado ? null : $('#sd-date').value || null;
+    const settlementMethod = isCuadrado ? null : $('#sd-method').value || null;
+    const settlementRef    = isCuadrado ? null : $('#sd-ref').value.trim() || null;
+    const extraNote        = $('#sd-note').value.trim();
+
+    if(!isCuadrado && (!settlementAmount || settlementAmount <= 0)){
+      toast('Ingresá el monto liquidado','warn'); return;
+    }
+
+    // Armar la nota estructurada que guardamos en balance_notes
+    let structured = '';
+    if(isCuadrado){
+      structured = 'Balance cuadrado — sin movimiento adicional.';
+    } else {
+      const quienActuo = isAFavorPDG ? 'Colaborador devolvió' : 'PDG giró';
+      const methodLabel = PAYMENT_METHODS.find(m=>m.id===settlementMethod)?.label || '';
+      structured = `${quienActuo} ${fmtMoney(settlementAmount)}`
+        + (settlementDate ? ` el ${fmtDate(settlementDate)}` : '')
+        + (methodLabel ? ` · ${methodLabel}` : '')
+        + (settlementRef ? ` · Ref: ${settlementRef}` : '');
+    }
+    if(extraNote) structured += `\n${extraNote}`;
+
+    const bal2 = computeBalance(f);
+    const patch = {
+      balance_closed_by: session.user.id,
+      balance_closed_at: new Date().toISOString(),
+      balance_kind: bal2.kind,
+      balance_diff: bal2.diff,
+      balance_notes: structured,
+      data: {
+        ...(f.data||{}),
+        settlement: {
+          kind: bal2.kind,
+          amount: settlementAmount,
+          date: settlementDate,
+          method: settlementMethod,
+          ref: settlementRef,
+          note: extraNote || null,
+          closed_by: session.user.id,
+          closed_at: new Date().toISOString()
+        }
+      }
+    };
+    closeModal();
+    await changeFundStatus(f, 'saldado', 'saldar', structured, patch);
+    toast('Balance cerrado','ok');
     render();
   };
 }

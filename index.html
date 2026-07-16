@@ -2985,7 +2985,11 @@ const _reportState = {
   fromDate: '',
   toDate:   '',
   groupBy:  'colaborador',   // 'colaborador' | 'proyecto'
-  kind:     'ambos',         // 'gastos' | 'fondos' | 'ambos'
+  // desembolsos → SP + SF (dinero que SALIÓ de tesorería; excluye JF porque son sub-eventos del SF)
+  // reembolsos  → solo SP-
+  // fondos      → solo SF-
+  // justificativos → solo JF-
+  kind:     'desembolsos',
   requester:'',
   project:  '',
   company:  '',
@@ -3011,12 +3015,19 @@ function filteredReportRows(){
   //   company_id, company_name, payment_method, status, total, expense_date
   //   (para fondos, total = requested_amount, expense_date = requested_date)
   const rows = [];
-  if(f.kind === 'gastos' || f.kind === 'ambos'){
+  // Filtrado por tipo (evita doble conteo entre SF- y sus JF- vinculados)
+  const wantSP = f.kind==='desembolsos' || f.kind==='reembolsos';
+  const wantJF = f.kind==='justificativos';
+  const wantSF = f.kind==='desembolsos' || f.kind==='fondos';
+  if(wantSP || wantJF){
     for(const r of state.requests){
+      const isJF = (r.number||'').startsWith('JF-') || !!r.fund_request_id;
+      if(isJF && !wantJF) continue;   // en desembolsos/reembolsos no incluimos JF
+      if(!isJF && !wantSP) continue;  // en justificativos no incluimos SP
       rows.push({ ...r, _type:'gasto' });
     }
   }
-  if(f.kind === 'fondos' || f.kind === 'ambos'){
+  if(wantSF){
     for(const g of (state.fundRequests||[])){
       rows.push({
         ...g,
@@ -3024,7 +3035,7 @@ function filteredReportRows(){
         total: Number(g.requested_amount || 0),
         expense_date: g.requested_date,
         description: g.purpose,
-        provider_name: '' // los fondos no tienen proveedor
+        provider_name: ''
       });
     }
   }
@@ -3106,10 +3117,17 @@ function renderReports(root){
           <input type="date" class="input" id="rep-to" value="${esc(f.toDate)}">
         </div>
       </div>
-      <div class="toggle-group">
-        <button class="${f.kind==='ambos'?'active':''}"  data-kind="ambos">Todo</button>
-        <button class="${f.kind==='gastos'?'active':''}" data-kind="gastos">Gastos</button>
-        <button class="${f.kind==='fondos'?'active':''}" data-kind="fondos">Fondos</button>
+      <div class="toggle-group" title="Elegí qué mostrar. 'Desembolsos' evita doble conteo: excluye los justificativos (JF) porque su plata ya está contada en el fondo (SF) al que están vinculados.">
+        <button class="${f.kind==='desembolsos'?'active':''}"  data-kind="desembolsos">💰 Desembolsos</button>
+        <button class="${f.kind==='reembolsos'?'active':''}"   data-kind="reembolsos">📄 Reembolsos SP</button>
+        <button class="${f.kind==='fondos'?'active':''}"       data-kind="fondos">📦 Fondos SF</button>
+        <button class="${f.kind==='justificativos'?'active':''}" data-kind="justificativos">🧾 Justificativos JF</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin:6px 0 4px;line-height:1.4">
+        ${f.kind==='desembolsos' ? '💰 Plata que SALIÓ de tesorería · reembolsos (SP) + fondos (SF). No suma los justificativos porque son parte del fondo.'
+        : f.kind==='reembolsos'  ? '📄 Solo gastos SP (reembolsos post-hoc, sin fondo previo).'
+        : f.kind==='fondos'      ? '📦 Solo solicitudes de fondos SF.'
+        : '🧾 Solo justificativos JF (recibos vinculados a un fondo). Su monto ya está representado por el SF correspondiente.'}
       </div>
       <div class="toggle-group" style="margin-top:8px">
         <button class="${f.groupBy==='colaborador'?'active':''}" data-gb="colaborador">Por colaborador</button>
@@ -3174,16 +3192,16 @@ function renderReports(root){
       </div>
     </div>
 
-    ${f.kind==='ambos' && (kpi.gastos.length || kpi.fondos.length) ? `
+    ${f.kind==='desembolsos' && (kpi.gastos.length || kpi.fondos.length) ? `
     <div class="rep-kpis" style="margin-top:0">
       <div class="rep-kpi" style="border-top-color:var(--brand);background:var(--brand-soft)">
         <div class="amt" style="color:var(--brand-2)">${fmtMoney(sum(kpi.gastos))}</div>
-        <div class="lab">📄 Gastos (SP-)</div>
+        <div class="lab">📄 Reembolsos SP</div>
         <div class="cnt">${kpi.gastos.length} · desembolsado ${fmtMoney(sum(kpi.gastos.filter(r=>desembolsadoStatuses.has(r.status))))}</div>
       </div>
       <div class="rep-kpi" style="border-top-color:#6366F1;background:color-mix(in srgb, #6366F1 8%, transparent)">
         <div class="amt" style="color:#3730a3">${fmtMoney(sum(kpi.fondos))}</div>
-        <div class="lab">📦 Fondos (SF-)</div>
+        <div class="lab">📦 Fondos SF</div>
         <div class="cnt">${kpi.fondos.length} · desembolsado ${fmtMoney(sum(kpi.fondos.filter(r=>desembolsadoStatuses.has(r.status))))}</div>
       </div>
     </div>` : ''}

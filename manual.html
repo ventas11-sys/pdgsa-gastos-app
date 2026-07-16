@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  .pdf-banner {
+    position: sticky; top: 0; z-index: 100;
+    background: linear-gradient(135deg, #E87722, #C25E12);
+    color: white;
+    padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font: 500 13.5px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .pdf-banner a {
+    color: white;
+    background: rgba(255,255,255,.2);
+    padding: 6px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .pdf-banner a:hover { background: rgba(255,255,255,.32); }
+  @media print { .pdf-banner { display: none; } }
+</style>
+</head>
+<body>
+<div class="pdf-banner">
+  <span>📘 Manual de uso · Gastos PDG v1.00</span>
+  <a href="Manual-Gastos-PDG-v1.00.pdf" download>⬇ Descargar PDF</a>
+</div>
+<title>Manual · Gastos PDG v1.00</title>
+<style>
+/* ─────────────────────────────────────────────
+   MANUAL · GASTOS PDG v1.00
+   Tokens
+   ───────────────────────────────────────────── */
+:root {
+  --paper:      #FAF7F2;
+  --paper-2:    #F5EDE0;
+  --ink:        #2A241C;
+  --ink-soft:   #4a3f30;
+  --muted:      #7A6E5F;
+  --rule:       #E8DFD1;
+  --card:       #ffffff;
+  --shadow-sm:  0 1px 2px rgba(42,36,28,.05);
+  --shadow-md:  0 4px 14px rgba(42,36,28,.07);
+
+  --brand:      #E87722;
+  --brand-2:    #C25E12;
+  --brand-soft: #FDF1E7;
+
+  --ok:         #2f855a;
+  --ok-soft:    #f0fdf4;
+  --warn:       #b7791f;
+  --warn-soft:  #fffbeb;
+  --danger:     #C53030;
+  --danger-soft:#fef2f2;
+
+  --role-col:   #6366F1;
+  --role-cnt:   #0891B2;
+  --role-tes:   #7C3AED;
+  --role-sup:   #B45309;
+
+  --serif:      Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  --sans:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono:       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --measure:    68ch;
+  --radius:     10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:      #1a1712;
+    --paper-2:    #24201a;
+    --ink:        #f4ede0;
+    --ink-soft:   #d8cfbe;
+    --muted:      #a09484;
+    --rule:       #362f24;
+    --card:       #23201a;
+    --shadow-sm:  0 1px 2px rgba(0,0,0,.4);
+    --shadow-md:  0 6px 18px rgba(0,0,0,.35);
+
+    --brand:      #F08A3D;
+    --brand-2:    #E87722;
+    --brand-soft: #33251a;
+
+    --ok:         #6ee7a5;
+    --ok-soft:    #10281b;
+    --warn:       #f2c46a;
+    --warn-soft:  #2c2110;
+    --danger:     #f88585;
+    --danger-soft:#2b1414;
+
+    --role-col:   #a5b4fc;
+    --role-cnt:   #67e8f9;
+    --role-tes:   #c4b5fd;
+    --role-sup:   #fbbf24;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:      #1a1712;
+  --paper-2:    #24201a;
+  --ink:        #f4ede0;
+  --ink-soft:   #d8cfbe;
+  --muted:      #a09484;
+  --rule:       #362f24;
+  --card:       #23201a;
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.4);
+  --shadow-md:  0 6px 18px rgba(0,0,0,.35);
+  --brand:      #F08A3D;
+  --brand-2:    #E87722;
+  --brand-soft: #33251a;
+  --ok:         #6ee7a5;
+  --ok-soft:    #10281b;
+  --warn:       #f2c46a;
+  --warn-soft:  #2c2110;
+  --danger:     #f88585;
+  --danger-soft:#2b1414;
+  --role-col:   #a5b4fc;
+  --role-cnt:   #67e8f9;
+  --role-tes:   #c4b5fd;
+  --role-sup:   #fbbf24;
+}
+:root[data-theme="light"] {
+  --paper:      #FAF7F2;
+  --paper-2:    #F5EDE0;
+  --ink:        #2A241C;
+  --ink-soft:   #4a3f30;
+  --muted:      #7A6E5F;
+  --rule:       #E8DFD1;
+  --card:       #ffffff;
+  --shadow-sm:  0 1px 2px rgba(42,36,28,.05);
+  --shadow-md:  0 4px 14px rgba(42,36,28,.07);
+  --brand:      #E87722;
+  --brand-2:    #C25E12;
+  --brand-soft: #FDF1E7;
+  --ok:         #2f855a;
+  --ok-soft:    #f0fdf4;
+  --warn:       #b7791f;
+  --warn-soft:  #fffbeb;
+  --danger:     #C53030;
+  --danger-soft:#fef2f2;
+  --role-col:   #6366F1;
+  --role-cnt:   #0891B2;
+  --role-tes:   #7C3AED;
+  --role-sup:   #B45309;
+}
+
+/* ─────────────────────────────────────────────
+   Reset & base
+   ───────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 16px/1.6 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, svg { max-width: 100%; display: block; }
+a { color: var(--brand-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { color: var(--brand); }
+a:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 2px; }
+code, kbd { font-family: var(--mono); font-size: .88em; }
+kbd { background: var(--paper-2); border: 1px solid var(--rule); padding: 1px 6px; border-radius: 4px; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  color: var(--ink);
+  line-height: 1.2;
+  text-wrap: balance;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Page shell — sidebar + content
+   ───────────────────────────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (min-width: 1000px) {
+  .shell {
+    grid-template-columns: 240px 1fr;
+    gap: 56px;
+    padding: 0 40px;
+  }
+}
+
+/* Sidebar TOC */
+.toc {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--rule);
+}
+@media (min-width: 1000px) {
+  .toc {
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    border-bottom: 0;
+    border-right: 1px solid var(--rule);
+    padding-right: 24px;
+  }
+}
+.toc-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.toc details { margin-bottom: 4px; }
+.toc details summary { cursor: pointer; padding: 4px 0; font-weight: 600; color: var(--ink); }
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc > ul > li { margin-bottom: 2px; }
+.toc a {
+  display: block;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: background .1s, color .1s;
+}
+.toc a:hover { background: var(--paper-2); color: var(--brand-2); }
+.toc a.section {
+  font-weight: 600;
+  color: var(--ink);
+  padding-left: 8px;
+}
+.toc a.sub {
+  padding-left: 22px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.toc-num {
+  display: inline-block;
+  min-width: 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Content column */
+main {
+  padding: 32px 0 96px;
+  max-width: 100%;
+}
+@media (min-width: 1000px) {
+  main { padding: 48px 0 120px; }
+}
+
+/* ─────────────────────────────────────────────
+   Cover
+   ───────────────────────────────────────────── */
+.cover {
+  padding: 48px 0 40px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 40px;
+}
+.cover .eyebrow {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--brand-2);
+  margin-bottom: 20px;
+}
+.cover h1 {
+  font-size: clamp(38px, 6vw, 60px);
+  letter-spacing: -.02em;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+.cover h1 em { font-style: italic; color: var(--brand-2); }
+.cover .subtitle {
+  max-width: 52ch;
+  font-size: 18px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 32px;
+}
+.cover-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 40px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  letter-spacing: .04em;
+  color: var(--muted);
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+.cover-meta strong { color: var(--ink); font-weight: 600; font-family: var(--sans); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+
+/* ─────────────────────────────────────────────
+   Sections & typography
+   ───────────────────────────────────────────── */
+section { max-width: var(--measure); }
+section + section { margin-top: 72px; }
+
+h2.section-title {
+  font-size: 32px;
+  letter-spacing: -.01em;
+  font-weight: 500;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+h2 .num {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--brand-2);
+  letter-spacing: 0;
+}
+h3 {
+  font-size: 22px;
+  margin: 40px 0 12px;
+  font-weight: 600;
+}
+h3 .num {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  margin-right: 8px;
+}
+h4 {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 20px 0 8px;
+  color: var(--ink);
+}
+p { margin: 0 0 14px; }
+p.lede { font-size: 18px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 24px; }
+ul, ol { padding-left: 22px; margin: 4px 0 16px; }
+li { margin-bottom: 6px; }
+
+/* ─────────────────────────────────────────────
+   Role chips
+   ───────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--sans);
+  letter-spacing: .01em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.chip::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.chip.col { color: var(--role-col); background: color-mix(in srgb, var(--role-col) 10%, transparent); border-color: color-mix(in srgb, var(--role-col) 25%, transparent); }
+.chip.cnt { color: var(--role-cnt); background: color-mix(in srgb, var(--role-cnt) 12%, transparent); border-color: color-mix(in srgb, var(--role-cnt) 30%, transparent); }
+.chip.tes { color: var(--role-tes); background: color-mix(in srgb, var(--role-tes) 12%, transparent); border-color: color-mix(in srgb, var(--role-tes) 30%, transparent); }
+.chip.sup { color: var(--role-sup); background: color-mix(in srgb, var(--role-sup) 12%, transparent); border-color: color-mix(in srgb, var(--role-sup) 30%, transparent); }
+
+/* ─────────────────────────────────────────────
+   Callouts
+   ───────────────────────────────────────────── */
+.callout {
+  border-left: 3px solid var(--rule);
+  background: var(--card);
+  padding: 14px 18px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 20px 0;
+  font-size: 14.5px;
+  box-shadow: var(--shadow-sm);
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout.tip     { border-color: var(--brand); }
+.callout.warn    { border-color: var(--warn); background: var(--warn-soft); }
+.callout.danger  { border-color: var(--danger); background: var(--danger-soft); }
+.callout.info    { border-color: var(--role-cnt); }
+.callout .label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.callout.tip .label     { color: var(--brand-2); }
+.callout.warn .label    { color: var(--warn); }
+.callout.danger .label  { color: var(--danger); }
+.callout.info .label    { color: var(--role-cnt); }
+
+/* ─────────────────────────────────────────────
+   Screen mockups (fake screenshots)
+   ───────────────────────────────────────────── */
+.mockup {
+  margin: 24px 0 8px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-md);
+  background: var(--paper);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.mockup .m-top {
+  background: var(--brand);
+  color: #fff;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.mockup .m-top .m-logo {
+  width: 26px; height: 26px;
+  background: #fff;
+  color: var(--brand);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.mockup .m-top .m-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mockup .m-top .m-icons { display: flex; gap: 6px; }
+.mockup .m-top .m-icons span {
+  width: 24px; height: 24px;
+  background: rgba(255,255,255,.15);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 11px;
+}
+.mockup .m-body {
+  padding: 16px;
+  background: var(--paper);
+  display: grid;
+  gap: 12px;
+}
+.mockup .m-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--card);
+  border-top: 1px solid var(--rule);
+  padding: 8px 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.mockup .m-nav > * {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px 8px;
+  min-width: 50px;
+}
+.mockup .m-nav .active { color: var(--brand); font-weight: 600; }
+.mockup .m-nav .fab {
+  width: 42px; height: 42px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  margin-top: -18px;
+  font-size: 20px;
+  box-shadow: 0 6px 12px rgba(232,119,34,.35);
+}
+
+/* Card (inside mockup body) */
+.mockup .m-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.mockup h5 {
+  margin: 0 0 8px;
+  font: 600 14px/1.3 var(--sans);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mockup h5 .dot { color: var(--brand); }
+.mockup .m-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 13px;
+}
+.mockup .m-row:last-child { border-bottom: 0; }
+.mockup .m-row .k { color: var(--muted); }
+.mockup .m-row .v { color: var(--ink); font-weight: 500; text-align: right; }
+.mockup .m-row .v strong { color: var(--brand-2); }
+
+.mockup .m-btn {
+  display: inline-block;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font: 600 12.5px/1 var(--sans);
+  text-align: center;
+}
+.mockup .m-btn.primary { background: var(--brand); color: #fff; }
+.mockup .m-btn.outline { background: transparent; color: var(--ink); border: 1px solid var(--rule); }
+.mockup .m-btn.warn    { background: var(--warn-soft); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); }
+.mockup .m-btn.danger  { background: var(--danger-soft); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); }
+.mockup .m-btn.block   { display: block; width: 100%; }
+
+.mockup .m-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--card);
+  padding: 4px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.mockup .m-tabs > div {
+  flex: 1; text-align: center; padding: 8px;
+  border-radius: 8px;
+  font-weight: 600; font-size: 12px;
+  color: var(--muted);
+}
+.mockup .m-tabs > .on { background: var(--brand); color: #fff; }
+.mockup .m-badge {
+  background: var(--danger); color: #fff;
+  border-radius: 999px;
+  font-size: 10px; padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.mockup .m-list-item {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex; gap: 12px; align-items: flex-start;
+  box-shadow: var(--shadow-sm);
+}
+.mockup .m-list-item .m-ico {
+  width: 32px; height: 32px;
+  background: var(--brand-soft);
+  color: var(--brand-2);
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.mockup .m-list-item.fund .m-ico { background: color-mix(in srgb, var(--role-col) 15%, transparent); color: var(--role-col); }
+.mockup .m-list-item .m-item-body { flex: 1; min-width: 0; font-size: 12.5px; }
+.mockup .m-list-item .m-item-body .r1 {
+  display: flex; justify-content: space-between; gap: 10px; align-items: center;
+}
+.mockup .m-list-item .m-item-body .num { font-family: var(--mono); font-size: 12px; color: var(--brand-2); font-weight: 600; }
+.mockup .m-list-item .m-item-body .amount { font-weight: 700; }
+.mockup .m-list-item .m-item-body .title { font-weight: 600; margin: 2px 0 4px; color: var(--ink); }
+.mockup .m-list-item .m-item-body .meta {
+  display: flex; flex-wrap: wrap; gap: 6px 10px;
+  color: var(--muted); font-size: 11px;
+}
+.m-status {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.m-status.borr { background: #e2e8f0; color: #475569; }
+.m-status.env  { background: #dbeafe; color: #1e40af; }
+.m-status.apr  { background: #dcfce7; color: #166534; }
+.m-status.pag  { background: #d1fae5; color: #065f46; }
+.m-status.just { background: #ede9fe; color: #5b21b6; }
+.m-status.sald { background: var(--brand-soft); color: var(--brand-2); }
+.m-status.cor  { background: #fef3c7; color: #92400e; }
+.m-status.rec  { background: #fee2e2; color: #991b1b; }
+
+.mockup-caption {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  letter-spacing: .04em;
+  padding: 2px 4px 0;
+  margin-bottom: 24px;
+}
+
+/* Balance pill inside mockup */
+.mockup .m-balance {
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.mockup .m-balance.ok    { background: var(--ok-soft); color: var(--ok); border-left: 3px solid var(--ok); }
+.mockup .m-balance.warn  { background: var(--warn-soft); color: var(--warn); border-left: 3px solid var(--warn); }
+.mockup .m-balance.danger{ background: var(--danger-soft); color: var(--danger); border-left: 3px solid var(--danger); }
+.mockup .m-balance small { display: block; font-weight: 400; font-size: 11.5px; margin-top: 6px; opacity: .85; }
+
+/* Mockup header hero (for detail views) */
+.mockup .m-hero {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #fff;
+  padding: 16px 18px;
+  border-radius: 12px;
+}
+.mockup .m-hero .num { font-family: var(--mono); font-size: 11px; opacity: .9; letter-spacing: .06em; }
+.mockup .m-hero .ttl { font-weight: 700; font-size: 15px; margin: 4px 0; }
+.mockup .m-hero .amt { font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
+.mockup .m-hero .sub { font-size: 11.5px; opacity: .9; margin-top: 4px; }
+.mockup .m-hero .st {
+  display: inline-block;
+  margin-top: 8px;
+  background: rgba(255,255,255,.2);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────
+   Flow diagram
+   ───────────────────────────────────────────── */
+.flow-wrap {
+  margin: 24px 0 12px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 24px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.flow-wrap h4 {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--ink);
+}
+.flow-wrap .flow-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 18px;
+  font-family: var(--mono);
+  letter-spacing: .04em;
+}
+.flow-scroll { overflow-x: auto; }
+.flow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px dashed var(--rule);
+  font-size: 12px;
+}
+.flow-legend .item { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.flow-legend .swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+}
+
+/* ─────────────────────────────────────────────
+   Tables
+   ───────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0 24px; border: 1px solid var(--rule); border-radius: 10px; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+tbody tr:last-child td { border-bottom: 0; }
+thead th {
+  background: var(--paper-2);
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 12.5px;
+  letter-spacing: .02em;
+}
+tbody td { color: var(--ink-soft); }
+tbody code { background: var(--paper-2); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+
+/* ─────────────────────────────────────────────
+   FAQ
+   ───────────────────────────────────────────── */
+details.faq {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+}
+details.faq summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  list-style: none;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14.5px;
+}
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary::before {
+  content: "▸";
+  color: var(--brand-2);
+  transition: transform .15s;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+details.faq[open] summary::before { transform: rotate(90deg); }
+details.faq .faq-body { padding: 10px 0 4px 24px; font-size: 14px; color: var(--ink-soft); }
+details.faq .faq-body p { margin: 0 0 8px; }
+details.faq .faq-body p:last-child { margin-bottom: 0; }
+
+/* ─────────────────────────────────────────────
+   Steps list (numbered actions)
+   ───────────────────────────────────────────── */
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+  counter-reset: stepc;
+}
+.steps > li {
+  counter-increment: stepc;
+  position: relative;
+  padding: 4px 0 16px 44px;
+  border-bottom: 1px dashed var(--rule);
+  margin-bottom: 16px;
+}
+.steps > li:last-child { border-bottom: 0; margin-bottom: 0; }
+.steps > li::before {
+  content: counter(stepc);
+  position: absolute;
+  left: 0; top: 2px;
+  width: 30px; height: 30px;
+  background: var(--brand-soft);
+  color: var(--brand-2);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+}
+.steps h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-family: var(--sans);
+  font-weight: 600;
+}
+.steps p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+
+/* ─────────────────────────────────────────────
+   Role card
+   ───────────────────────────────────────────── */
+.roles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 20px 0;
+}
+@media (min-width: 640px) {
+  .roles-grid { grid-template-columns: 1fr 1fr; }
+}
+.role-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+.role-card h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-family: var(--sans);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.role-card p {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  margin: 8px 0 0;
+}
+.role-card ul { margin: 10px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-soft); }
+.role-card ul li { margin-bottom: 4px; }
+
+/* ─────────────────────────────────────────────
+   Section anchor spacer (for sticky TOC scroll)
+   ───────────────────────────────────────────── */
+section[id] { scroll-margin-top: 24px; }
+
+/* Print */
+@media print {
+  .toc { display: none; }
+  .shell { display: block; padding: 0; }
+  main { padding: 0; }
+  body { background: white; color: black; }
+  .mockup, .flow-wrap, .callout, .role-card, .table-wrap { break-inside: avoid; }
+  h2.section-title { break-before: page; }
+}
+</style>
+
+<div class="shell">
+  <!-- ─────────────────────────────────────────────
+       SIDEBAR TOC
+       ───────────────────────────────────────────── -->
+  <aside class="toc" aria-label="Índice del manual">
+    <p class="toc-label">Manual · v1.00</p>
+    <ul>
+      <li>
+        <a class="section" href="#intro"><span class="toc-num">1.</span> Introducción</a>
+        <ul>
+          <li><a class="sub" href="#intro">— Los 4 perfiles</a></li>
+          <li><a class="sub" href="#intro">— Matriz de permisos</a></li>
+        </ul>
+      </li>
+      <li><a class="section" href="#conceptos"><span class="toc-num">2.</span> Conceptos clave</a></li>
+      <li><a class="section" href="#flujos"><span class="toc-num">3.</span> Diagramas de flujo</a></li>
+      <li><a class="section" href="#ingreso"><span class="toc-num">4.</span> Ingresar a la app</a></li>
+      <li>
+        <a class="section" href="#colaborador"><span class="toc-num">5.</span> Colaborador</a>
+        <ul>
+          <li><a class="sub" href="#col-home">5.1 · La pantalla de inicio</a></li>
+          <li><a class="sub" href="#col-gasto">5.2 · Cargar un gasto</a></li>
+          <li><a class="sub" href="#col-fondo">5.3 · Solicitar fondos</a></li>
+          <li><a class="sub" href="#col-just">5.4 · Justificar el fondo</a></li>
+          <li><a class="sub" href="#col-vinc">5.5 · Vincular gastos ya cargados</a></li>
+        </ul>
+      </li>
+      <li>
+        <a class="section" href="#contabilidad"><span class="toc-num">6.</span> Contabilidad</a>
+        <ul>
+          <li><a class="sub" href="#cnt-band">6.1 · Bandeja</a></li>
+          <li><a class="sub" href="#cnt-rev">6.2 · Aprobar / corregir / rechazar</a></li>
+          <li><a class="sub" href="#cnt-ok">6.3 · Marcar ítem OK</a></li>
+          <li><a class="sub" href="#cnt-sald">6.4 · Cerrar balance</a></li>
+        </ul>
+      </li>
+      <li>
+        <a class="section" href="#tesoreria"><span class="toc-num">7.</span> Tesorería</a>
+        <ul>
+          <li><a class="sub" href="#tes-band">7.1 · Bandeja</a></li>
+          <li><a class="sub" href="#tes-pago">7.2 · Marcar pagado</a></li>
+        </ul>
+      </li>
+      <li>
+        <a class="section" href="#superadmin"><span class="toc-num">8.</span> Super Admin</a>
+        <ul>
+          <li><a class="sub" href="#sup-usr">8.1 · Usuarios</a></li>
+          <li><a class="sub" href="#sup-cat">8.2 · Proyectos y empresas</a></li>
+          <li><a class="sub" href="#sup-del">8.3 · Eliminar solicitudes</a></li>
+        </ul>
+      </li>
+      <li><a class="section" href="#estados"><span class="toc-num">9.</span> Estados (referencia)</a></li>
+      <li><a class="section" href="#faq"><span class="toc-num">10.</span> Problemas comunes</a></li>
+    </ul>
+  </aside>
+
+  <!-- ─────────────────────────────────────────────
+       CONTENT
+       ───────────────────────────────────────────── -->
+  <main>
+
+    <!-- ══════ COVER ══════ -->
+    <header class="cover">
+      <p class="eyebrow">Manual de uso · PDGSA</p>
+      <h1>Reporte de <em>gastos</em> y solicitud de <em>fondos</em></h1>
+      <p class="subtitle">
+        Cómo usar la app de gestión de solicitudes de pago para los cuatro perfiles del equipo: colaborador, contabilidad, tesorería y super administrador. Con flujo completo de solicitud de fondos por adelantado, justificación con recibos y cierre de balance.
+      </p>
+      <div class="cover-meta">
+        <div>Versión<strong>v1.00</strong></div>
+        <div>Actualizado<strong>16 jul 2026</strong></div>
+        <div>Público<strong>Equipo interno PDGSA</strong></div>
+        <div>Plataforma<strong>Web + móvil (PWA)</strong></div>
+      </div>
+    </header>
+
+    <!-- ══════ 1. INTRO ══════ -->
+    <section id="intro">
+      <h2 class="section-title"><span class="num">01</span> Introducción</h2>
+
+      <p class="lede">
+        La app tiene un único objetivo: que quede registrado, con foto del recibo y trazabilidad completa, todo lo que gasta el equipo y todo lo que PDG entrega por adelantado. Desde el celular. En dos minutos.
+      </p>
+
+      <h3>Qué resuelve</h3>
+      <ul>
+        <li>Reemplaza los formularios de "Solicitud de Pago PDG" en papel.</li>
+        <li>Deja el recibo digitalizado desde la cámara del celular.</li>
+        <li>Enruta automáticamente a contabilidad y tesorería.</li>
+        <li>Calcula el balance entre lo pedido y lo justificado cuando se pide dinero por adelantado.</li>
+        <li>Guarda un historial auditable por cada solicitud (quién, cuándo, qué hizo).</li>
+      </ul>
+
+      <h3>Los cuatro perfiles</h3>
+      <div class="roles-grid">
+        <div class="role-card">
+          <h4><span class="chip col">Colaborador</span></h4>
+          <p>Todo el que gasta o pide plata. Es la mayoría del equipo.</p>
+          <ul>
+            <li>Crea gastos (con recibo) y solicitudes de fondos.</li>
+            <li>Justifica lo que gastó cuando recibió dinero por adelantado.</li>
+            <li>Solo ve sus propias solicitudes.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <h4><span class="chip cnt">Contabilidad</span></h4>
+          <p>Recibe todo lo enviado y decide si aprueba, pide corrección o rechaza.</p>
+          <ul>
+            <li>Revisa todas las solicitudes (de todos los colaboradores).</li>
+            <li>Marca cada ítem como <strong>OK</strong> o <strong>a revisar</strong>.</li>
+            <li>Cierra el balance de los fondos cuando terminan de justificarse.</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <h4><span class="chip tes">Tesorería</span></h4>
+          <p>Ejecuta el pago o la entrega del dinero.</p>
+          <ul>
+            <li>Ve solo lo aprobado por contabilidad.</li>
+            <li>Marca la solicitud como <strong>pagada</strong> con referencia.</li>
+            <li>Puede rechazar (por ejemplo, datos bancarios erróneos).</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <h4><span class="chip sup">Super Admin</span></h4>
+          <p>Puede hacer todo lo anterior más la administración de la app.</p>
+          <ul>
+            <li>Gestiona usuarios (crea, edita, contraseñas, elimina).</li>
+            <li>Administra proyectos, empresas y la marca.</li>
+            <li>Puede <strong>eliminar</strong> solicitudes en cualquier estado.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Matriz de permisos</h3>
+      <p>Qué acción puede ejecutar cada perfil dentro de la app. <code>✓</code> = habilitado · <code>—</code> = no · <code>✓*</code> = con restricciones (leer nota al pie).</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44%">Acción</th>
+              <th style="text-align:center"><span class="chip col" style="font-size:11px;padding:2px 8px">Colab.</span></th>
+              <th style="text-align:center"><span class="chip cnt" style="font-size:11px;padding:2px 8px">Contab.</span></th>
+              <th style="text-align:center"><span class="chip tes" style="font-size:11px;padding:2px 8px">Tesor.</span></th>
+              <th style="text-align:center"><span class="chip sup" style="font-size:11px;padding:2px 8px">Super</span></th>
+            </tr>
+          </thead>
+          <tbody style="font-variant-numeric: tabular-nums; text-align:center;">
+            <tr><td colspan="5" style="background:var(--paper-2);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:left;">Gastos (SP-)</td></tr>
+            <tr><td style="text-align:left">Crear un gasto nuevo (reembolso)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Ver mis propios gastos</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Ver los gastos de todos</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Editar un gasto propio</td><td>✓<sup>1</sup></td><td>—</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Aprobar / corregir / rechazar</td><td>—</td><td>✓</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Marcar ítem OK / a revisar</td><td>—</td><td>✓</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Marcar como pagado</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Rechazar pago</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Eliminar borrador propio</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Eliminar gasto en cualquier estado</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+
+            <tr><td colspan="5" style="background:var(--paper-2);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:left;">Fondos (SF-)</td></tr>
+            <tr><td style="text-align:left">Solicitar fondos por adelantado</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Ver mis propios fondos</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Ver los fondos de todos</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Aprobar / corregir / rechazar</td><td>—</td><td>✓</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Confirmar entrega de fondos</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Cargar recibos justificativos</td><td>✓<sup>2</sup></td><td>✓</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Cerrar carga de recibos</td><td>✓<sup>2</sup></td><td>—</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Cerrar balance (saldar)</td><td>—</td><td>✓</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Vincular gastos a un fondo</td><td>✓<sup>1</sup></td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Eliminar fondo en cualquier estado</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+
+            <tr><td colspan="5" style="background:var(--paper-2);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:left;">Administración</td></tr>
+            <tr><td style="text-align:left">Editar mi perfil (nombre, teléfono)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Ver reportes y descargas</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Gestionar usuarios</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Cambiar contraseñas de otros</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Editar proyectos y empresas</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+            <tr><td style="text-align:left">Cambiar marca (colores, logo)</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="font-size:13px;color:var(--muted);margin-top:4px;">
+        <sup>1</sup> Solo mientras la solicitud esté en <code>borrador</code> o <code>corregir</code>.<br>
+        <sup>2</sup> Solo el solicitante del fondo, y solo cuando el fondo esté en <code>pagado</code>.
+      </p>
+    </section>
+
+    <!-- ══════ 2. CONCEPTOS ══════ -->
+    <section id="conceptos">
+      <h2 class="section-title"><span class="num">02</span> Conceptos clave</h2>
+
+      <p class="lede">
+        Hay dos tipos de solicitudes y viven en tabs separadas dentro de la app. Entender la diferencia es lo único crítico para no equivocarse.
+      </p>
+
+      <h3>Gasto <span style="color:var(--muted);font-weight:400;font-family:var(--sans);font-size:16px;">— la plata ya se gastó</span></h3>
+      <p>
+        Sale con el prefijo <code>SP-YYYYMM-NNNN</code>. Se usa cuando el colaborador ya pagó de su bolsillo (o con tarjeta corporativa) y ahora sube el <strong>recibo</strong> para que le reembolsen o para que quede registrado el gasto. Es el flujo tradicional.
+      </p>
+
+      <h3>Solicitud de fondos <span style="color:var(--muted);font-weight:400;font-family:var(--sans);font-size:16px;">— la plata la piden por adelantado</span></h3>
+      <p>
+        Sale con el prefijo <code>SF-YYYYMM-NNNN</code>. Se usa cuando el colaborador necesita dinero <strong>antes</strong> de gastar (ej. comprar materiales para una obra). Después de recibir la plata, sube uno o más recibos que justifican en qué se usó y la app calcula el balance.
+      </p>
+
+      <div class="callout tip">
+        <div class="label">Regla simple</div>
+        <p><strong>¿La plata ya salió?</strong> Cargá un gasto (SP). <strong>¿Todavía no?</strong> Pedí fondos (SF) y después justificás con recibos.</p>
+      </div>
+
+      <h3>Balance de un fondo</h3>
+      <p>La app calcula automáticamente:</p>
+      <ul>
+        <li><strong>Solicitado</strong> · lo que se pidió al inicio.</li>
+        <li><strong>Justificado</strong> · suma de todos los recibos vinculados.</li>
+        <li><strong>Diferencia</strong> = Solicitado − Justificado. Da tres resultados:</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Signo</th><th>Significa</th><th>Quién actúa</th></tr></thead>
+          <tbody>
+            <tr><td><code>B/. 0.00</code></td><td>Cuadrado</td><td>Nadie. Contabilidad cierra el balance.</td></tr>
+            <tr><td><code>+B/. 30.00</code></td><td>Sobró plata</td><td>Colaborador devuelve <code>B/. 30.00</code> a PDG.</td></tr>
+            <tr><td><code>−B/. 30.00</code></td><td>Faltó plata</td><td>PDG gira <code>B/. 30.00</code> al colaborador.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════ 3. FLUJOS ══════ -->
+    <section id="flujos">
+      <h2 class="section-title"><span class="num">03</span> Diagramas de flujo</h2>
+
+      <p class="lede">
+        Las dos rutas que puede seguir una solicitud, con el actor que dispara cada transición. Los estados finales están sombreados.
+      </p>
+
+      <!-- FLOW 1: Gasto -->
+      <div class="flow-wrap">
+        <h4>Flujo · Gasto (reembolso)</h4>
+        <p class="flow-sub">SP-YYYYMM-NNNN</p>
+        <div class="flow-scroll">
+          <svg viewBox="0 0 900 300" role="img" aria-label="Diagrama de flujo del gasto" style="min-width:700px;width:100%;height:auto;">
+            <defs>
+              <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+              <style>
+                .node text  { font: 600 12px var(--sans); fill: var(--ink); }
+                .node .who  { font: 500 10px var(--mono); letter-spacing:.04em; }
+                .arr        { stroke-width: 1.6; fill: none; }
+                .arr text   { font: 500 10.5px var(--sans); fill: var(--muted); }
+              </style>
+            </defs>
+            <!-- borrador -->
+            <g class="node">
+              <rect x="15" y="115" width="110" height="60" rx="10" fill="var(--paper-2)" stroke="var(--rule)"/>
+              <text x="70" y="140" text-anchor="middle">borrador</text>
+              <text class="who" x="70" y="158" text-anchor="middle" fill="var(--role-col)">colaborador</text>
+            </g>
+            <!-- enviado -->
+            <g class="node">
+              <rect x="185" y="115" width="110" height="60" rx="10" fill="#dbeafe" stroke="#93c5fd"/>
+              <text x="240" y="140" text-anchor="middle">enviado</text>
+              <text class="who" x="240" y="158" text-anchor="middle" fill="var(--role-cnt)">en contabilidad</text>
+            </g>
+            <!-- corregir -->
+            <g class="node">
+              <rect x="355" y="25" width="110" height="60" rx="10" fill="#fef3c7" stroke="#fbbf24"/>
+              <text x="410" y="50" text-anchor="middle">corregir</text>
+              <text class="who" x="410" y="68" text-anchor="middle" fill="var(--role-col)">vuelve al colab.</text>
+            </g>
+            <!-- rechazado -->
+            <g class="node">
+              <rect x="355" y="215" width="110" height="60" rx="10" fill="#fee2e2" stroke="#fca5a5" stroke-dasharray="3,3"/>
+              <text x="410" y="240" text-anchor="middle">rechazado</text>
+              <text class="who" x="410" y="258" text-anchor="middle" fill="var(--danger)">terminal</text>
+            </g>
+            <!-- aprobado_contab -->
+            <g class="node">
+              <rect x="525" y="115" width="130" height="60" rx="10" fill="#dcfce7" stroke="#86efac"/>
+              <text x="590" y="138" text-anchor="middle">aprobado_contab</text>
+              <text class="who" x="590" y="158" text-anchor="middle" fill="var(--role-tes)">a tesorería</text>
+            </g>
+            <!-- pagado -->
+            <g class="node">
+              <rect x="715" y="60" width="110" height="60" rx="10" fill="#d1fae5" stroke="#6ee7b7" stroke-dasharray="3,3"/>
+              <text x="770" y="85" text-anchor="middle">pagado ✓</text>
+              <text class="who" x="770" y="103" text-anchor="middle" fill="var(--ok)">terminal</text>
+            </g>
+            <!-- rechazado_teso -->
+            <g class="node">
+              <rect x="715" y="180" width="140" height="60" rx="10" fill="#fee2e2" stroke="#fca5a5" stroke-dasharray="3,3"/>
+              <text x="785" y="205" text-anchor="middle">rechazado_tesoreria</text>
+              <text class="who" x="785" y="223" text-anchor="middle" fill="var(--danger)">terminal</text>
+            </g>
+
+            <!-- edges -->
+            <g class="arr" color="var(--role-col)">
+              <path d="M125 145 L185 145" marker-end="url(#ah1)"/>
+              <text x="155" y="138" text-anchor="middle">enviar</text>
+            </g>
+            <g class="arr" color="var(--role-cnt)">
+              <path d="M295 130 L355 68" marker-end="url(#ah1)"/>
+              <text x="325" y="88" text-anchor="middle" transform="rotate(-27 325 88)">corregir</text>
+            </g>
+            <g class="arr" color="var(--role-cnt)">
+              <path d="M295 158 L355 235" marker-end="url(#ah1)"/>
+              <text x="325" y="205" text-anchor="middle" transform="rotate(38 325 205)">rechazar</text>
+            </g>
+            <g class="arr" color="var(--role-cnt)">
+              <path d="M295 145 L525 145" marker-end="url(#ah1)"/>
+              <text x="410" y="138" text-anchor="middle">aprobar</text>
+            </g>
+            <!-- corregir back to enviado -->
+            <g class="arr" color="var(--role-col)">
+              <path d="M355 55 C 280 55, 220 80, 240 115" marker-end="url(#ah1)"/>
+              <text x="255" y="72" text-anchor="middle">reenviar</text>
+            </g>
+            <g class="arr" color="var(--role-tes)">
+              <path d="M655 130 L715 100" marker-end="url(#ah1)"/>
+              <text x="682" y="105" text-anchor="middle" transform="rotate(-24 682 105)">pagar</text>
+            </g>
+            <g class="arr" color="var(--role-tes)">
+              <path d="M655 160 L715 200" marker-end="url(#ah1)"/>
+              <text x="683" y="188" text-anchor="middle" transform="rotate(30 683 188)">rechazar</text>
+            </g>
+          </svg>
+        </div>
+        <div class="flow-legend">
+          <span class="item"><span class="swatch" style="background:var(--paper-2)"></span>en curso</span>
+          <span class="item"><span class="swatch" style="background:#dbeafe"></span>en revisión</span>
+          <span class="item"><span class="swatch" style="background:#dcfce7"></span>aprobado</span>
+          <span class="item"><span class="swatch" style="background:#d1fae5;border-style:dashed"></span>terminal ok</span>
+          <span class="item"><span class="swatch" style="background:#fee2e2;border-style:dashed"></span>terminal rechazado</span>
+        </div>
+      </div>
+
+      <!-- FLOW 2: Fondos -->
+      <div class="flow-wrap">
+        <h4>Flujo · Solicitud de fondos + justificación + balance</h4>
+        <p class="flow-sub">SF-YYYYMM-NNNN</p>
+        <div class="flow-scroll">
+          <svg viewBox="0 0 1100 340" role="img" aria-label="Diagrama de flujo del fondo" style="min-width:820px;width:100%;height:auto;">
+            <defs>
+              <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+              <style>
+                .node2 text  { font: 600 12px var(--sans); fill: var(--ink); }
+                .node2 .who  { font: 500 10px var(--mono); letter-spacing:.04em; }
+                .arr2        { stroke-width: 1.6; fill: none; }
+                .arr2 text   { font: 500 10.5px var(--sans); fill: var(--muted); }
+              </style>
+            </defs>
+
+            <g class="node2">
+              <rect x="15" y="140" width="100" height="60" rx="10" fill="var(--paper-2)" stroke="var(--rule)"/>
+              <text x="65" y="165" text-anchor="middle">borrador</text>
+              <text class="who" x="65" y="183" text-anchor="middle" fill="var(--role-col)">colaborador</text>
+            </g>
+            <g class="node2">
+              <rect x="155" y="140" width="100" height="60" rx="10" fill="#dbeafe" stroke="#93c5fd"/>
+              <text x="205" y="165" text-anchor="middle">enviado</text>
+              <text class="who" x="205" y="183" text-anchor="middle" fill="var(--role-cnt)">contabilidad</text>
+            </g>
+            <g class="node2">
+              <rect x="295" y="50" width="100" height="60" rx="10" fill="#fef3c7" stroke="#fbbf24"/>
+              <text x="345" y="75" text-anchor="middle">corregir</text>
+              <text class="who" x="345" y="93" text-anchor="middle" fill="var(--role-col)">→ colab.</text>
+            </g>
+            <g class="node2">
+              <rect x="295" y="240" width="100" height="60" rx="10" fill="#fee2e2" stroke="#fca5a5" stroke-dasharray="3,3"/>
+              <text x="345" y="265" text-anchor="middle">rechazado</text>
+              <text class="who" x="345" y="283" text-anchor="middle" fill="var(--danger)">terminal</text>
+            </g>
+            <g class="node2">
+              <rect x="425" y="140" width="130" height="60" rx="10" fill="#dcfce7" stroke="#86efac"/>
+              <text x="490" y="163" text-anchor="middle">aprobado</text>
+              <text class="who" x="490" y="183" text-anchor="middle" fill="var(--role-tes)">tesorería</text>
+            </g>
+            <g class="node2">
+              <rect x="595" y="140" width="100" height="60" rx="10" fill="#d1fae5" stroke="#6ee7b7"/>
+              <text x="645" y="165" text-anchor="middle">pagado 💰</text>
+              <text class="who" x="645" y="183" text-anchor="middle" fill="var(--role-col)">→ colab.</text>
+            </g>
+            <g class="node2">
+              <rect x="595" y="245" width="140" height="60" rx="10" fill="#fee2e2" stroke="#fca5a5" stroke-dasharray="3,3"/>
+              <text x="665" y="270" text-anchor="middle">rechazado_teso</text>
+              <text class="who" x="665" y="288" text-anchor="middle" fill="var(--danger)">terminal</text>
+            </g>
+            <g class="node2">
+              <rect x="735" y="140" width="110" height="60" rx="10" fill="#ede9fe" stroke="#c4b5fd"/>
+              <text x="790" y="163" text-anchor="middle">justificado 🧾</text>
+              <text class="who" x="790" y="183" text-anchor="middle" fill="var(--role-cnt)">contab. cierra</text>
+            </g>
+            <g class="node2">
+              <rect x="885" y="140" width="110" height="60" rx="10" fill="var(--brand-soft)" stroke="var(--brand)" stroke-dasharray="3,3"/>
+              <text x="940" y="165" text-anchor="middle">saldado 🏁</text>
+              <text class="who" x="940" y="183" text-anchor="middle" fill="var(--brand-2)">terminal</text>
+            </g>
+
+            <!-- edges -->
+            <g class="arr2" color="var(--role-col)">
+              <path d="M115 170 L155 170" marker-end="url(#ah2)"/>
+              <text x="135" y="163" text-anchor="middle">enviar</text>
+            </g>
+            <g class="arr2" color="var(--role-cnt)">
+              <path d="M255 155 L295 90" marker-end="url(#ah2)"/>
+              <text x="270" y="112" text-anchor="middle" transform="rotate(-32 270 112)">corregir</text>
+            </g>
+            <g class="arr2" color="var(--role-cnt)">
+              <path d="M255 185 L295 260" marker-end="url(#ah2)"/>
+              <text x="270" y="230" text-anchor="middle" transform="rotate(43 270 230)">rechazar</text>
+            </g>
+            <g class="arr2" color="var(--role-cnt)">
+              <path d="M255 170 L425 170" marker-end="url(#ah2)"/>
+              <text x="340" y="163" text-anchor="middle">aprobar</text>
+            </g>
+            <g class="arr2" color="var(--role-col)">
+              <path d="M295 75 C 250 75, 190 90, 205 140" marker-end="url(#ah2)"/>
+              <text x="215" y="94" text-anchor="middle">reenviar</text>
+            </g>
+            <g class="arr2" color="var(--role-tes)">
+              <path d="M555 170 L595 170" marker-end="url(#ah2)"/>
+              <text x="575" y="163" text-anchor="middle">pagar</text>
+            </g>
+            <g class="arr2" color="var(--role-tes)">
+              <path d="M555 185 L595 265" marker-end="url(#ah2)"/>
+              <text x="570" y="230" text-anchor="middle" transform="rotate(60 570 230)">rechazar</text>
+            </g>
+            <!-- loop de "agregar gasto" en pagado -->
+            <g class="arr2" color="var(--role-col)" stroke-dasharray="3,3">
+              <path d="M600 145 C 605 90, 690 90, 695 145" marker-end="url(#ah2)"/>
+              <text x="647" y="108" text-anchor="middle">carga recibos</text>
+            </g>
+            <g class="arr2" color="var(--role-col)">
+              <path d="M695 170 L735 170" marker-end="url(#ah2)"/>
+              <text x="715" y="163" text-anchor="middle">cerrar</text>
+            </g>
+            <g class="arr2" color="var(--role-cnt)">
+              <path d="M845 170 L885 170" marker-end="url(#ah2)"/>
+              <text x="865" y="163" text-anchor="middle">saldar</text>
+            </g>
+          </svg>
+        </div>
+        <div class="flow-legend">
+          <span class="item"><span class="swatch" style="background:#d1fae5"></span>pagado (permite cargar recibos)</span>
+          <span class="item"><span class="swatch" style="background:#ede9fe"></span>justificado (esperando cierre)</span>
+          <span class="item"><span class="swatch" style="background:var(--brand-soft);border-style:dashed"></span>saldado — balance registrado</span>
+          <span class="item" style="border-top:1.5px dashed var(--brand-2);padding-top:2px;margin-top:6px">línea punteada = acción repetible</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 4. INGRESO ══════ -->
+    <section id="ingreso">
+      <h2 class="section-title"><span class="num">04</span> Ingresar a la app</h2>
+
+      <p>La app corre en el navegador — no hay que instalar nada. Pero se puede agregar al home del celular como si fuera una app nativa (recomendado).</p>
+
+      <ol class="steps">
+        <li>
+          <h4>Abrí la URL que te pasaron</h4>
+          <p>Por ejemplo <code>ventas11-sys.github.io/pdgsa-gastos-app</code>. Funciona en Chrome, Safari, Edge y cualquier navegador moderno.</p>
+        </li>
+        <li>
+          <h4>Ingresá con tu correo y contraseña</h4>
+          <p>La contraseña la asigna el Super Admin. Si no la recordás, contactá al administrador — no hay flujo de "olvidé mi contraseña" por decisión de seguridad.</p>
+        </li>
+        <li>
+          <h4>Agregala a tu pantalla de inicio (opcional)</h4>
+          <p><strong>Android/Chrome:</strong> menú (⋮) → "Añadir a pantalla de inicio". <strong>iPhone/Safari:</strong> botón compartir → "Añadir a pantalla de inicio". Queda con ícono y se abre a pantalla completa, incluso puede usar la cámara sin problemas.</p>
+        </li>
+      </ol>
+
+      <div class="mockup" style="max-width:340px;margin-left:auto;margin-right:auto;">
+        <div style="padding:24px 20px;background:linear-gradient(135deg, var(--brand) 0%, #8B4513 100%);color:#fff;">
+          <div style="width:56px;height:56px;background:#fff;color:var(--brand);border-radius:12px;display:grid;place-items:center;font-weight:800;margin:0 auto 12px;">PDG</div>
+          <div style="text-align:center;font-weight:700;">Reporte de Gastos Colaborador</div>
+          <div style="text-align:center;font-size:11px;opacity:.85;margin-top:2px;">Solicitud y control de pagos</div>
+        </div>
+        <div class="m-body" style="gap:10px;">
+          <div style="font-size:12px;color:var(--muted);">Correo</div>
+          <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--ink-soft);">tuemail@pdgsa.com</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Contraseña</div>
+          <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--muted);letter-spacing:.3em;">••••••••</div>
+          <div class="m-btn primary block" style="margin-top:6px">Iniciar sesión</div>
+          <div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:4px;">v1.00 · 2026-07-15</div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 4.1 — Pantalla de login. La versión aparece siempre al pie.</p>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         5. COLABORADOR
+         ══════════════════════════════════════════════ -->
+    <section id="colaborador">
+      <h2 class="section-title"><span class="num">05</span> Manual del <span class="chip col" style="font-size:14px;padding:3px 12px;">Colaborador</span></h2>
+
+      <p class="lede">
+        La rutina del colaborador tiene tres momentos: cargar gastos ya realizados, pedir plata por adelantado y justificar cómo se usó ese dinero.
+      </p>
+
+      <!-- 5.1 Home -->
+      <h3 id="col-home"><span class="num">5.1</span> La pantalla de inicio</h3>
+      <p>Al entrar ves tu resumen: cuántas solicitudes tenés, cuántas en proceso, cuántas pagadas. Si tenés solicitudes de fondos abiertas, aparece un card <em>Solicitudes de fondos</em> con lo pedido y lo justificado hasta el momento.</p>
+
+      <div class="mockup" style="max-width:380px;">
+        <div class="m-top">
+          <div class="m-logo">PDG</div>
+          <div class="m-title">Reporte de Gastos Colaborador</div>
+          <div class="m-icons"><span>⚙</span><span>↩</span></div>
+        </div>
+        <div class="m-body">
+          <div class="m-card" style="padding:14px;">
+            <div style="font-family:var(--serif);font-weight:600;font-size:16px;">Hola, Yohana</div>
+            <div style="font-size:11.5px;color:var(--muted);">jueves, 16 de julio</div>
+            <span class="chip col" style="margin-top:6px;padding:2px 10px;font-size:11px">Colaborador</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+            <div class="m-card" style="text-align:center;padding:8px 4px;"><div style="font-size:18px;font-weight:700;color:var(--brand)">4</div><div style="font-size:10px;color:var(--muted)">Mis</div></div>
+            <div class="m-card" style="text-align:center;padding:8px 4px;background:var(--warn-soft)"><div style="font-size:18px;font-weight:700;color:var(--warn)">1</div><div style="font-size:10px;color:var(--muted)">Proceso</div></div>
+            <div class="m-card" style="text-align:center;padding:8px 4px;background:var(--ok-soft)"><div style="font-size:18px;font-weight:700;color:var(--ok)">2</div><div style="font-size:10px;color:var(--muted)">Pagadas</div></div>
+            <div class="m-card" style="text-align:center;padding:8px 4px;"><div style="font-size:18px;font-weight:700;color:var(--muted)">0</div><div style="font-size:10px;color:var(--muted)">Corregir</div></div>
+          </div>
+          <div class="m-card" style="border-left:3px solid var(--role-col);">
+            <h5><span style="color:var(--role-col)">📦</span> Solicitudes de fondos</h5>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">
+              <div><div style="font-size:16px;font-weight:700">2</div><div style="font-size:10px;color:var(--muted)">Abiertas</div></div>
+              <div><div style="font-size:16px;font-weight:700">300.00</div><div style="font-size:10px;color:var(--muted)">Solicitado</div></div>
+              <div><div style="font-size:16px;font-weight:700">145.00</div><div style="font-size:10px;color:var(--muted)">Justificado</div></div>
+            </div>
+            <div class="m-btn outline block" style="margin-top:10px">Ver mis fondos</div>
+          </div>
+          <div class="m-btn primary block">+ Nueva solicitud</div>
+        </div>
+        <div class="m-nav">
+          <div class="active">🏠<div>Inicio</div></div>
+          <div>📋<div>Solicitudes</div></div>
+          <div class="fab">+</div>
+          <div>📥<div>Bandeja</div></div>
+          <div>👤<div>Perfil</div></div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 5.1 — Home del colaborador con widget de fondos y navegación inferior.</p>
+
+      <h4>La barra de abajo</h4>
+      <p>Cinco botones que están siempre visibles:</p>
+      <ul>
+        <li><strong>Inicio</strong> · resumen de arriba.</li>
+        <li><strong>Solicitudes</strong> · lista de todo lo tuyo (con tabs Gastos y Fondos).</li>
+        <li><strong>+ (naranja, en el centro)</strong> · abre un menú: <em>Solicitud de fondos</em> o <em>Gasto / Reembolso</em>.</li>
+        <li><strong>Bandeja</strong> · solo aparece para roles que revisan.</li>
+        <li><strong>Perfil</strong> · tu información y versión de la app.</li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="label">Atajo</div>
+        <p>El botón central <strong>+</strong> es el punto de entrada más rápido: abre el menú que decide entre "pedir plata" o "cargar recibo".</p>
+      </div>
+
+      <!-- 5.2 Cargar gasto -->
+      <h3 id="col-gasto"><span class="num">5.2</span> Cargar un gasto (reembolso)</h3>
+      <p>Usá esta ruta cuando <strong>ya gastaste</strong> y tenés el recibo (nafta, insumos, viaje, etc.).</p>
+
+      <ol class="steps">
+        <li>
+          <h4>Tocá el <strong>+</strong> → <em>Gasto / Reembolso</em></h4>
+          <p>Se abre un wizard de 4 pasos: Datos, Montos, Adjuntos, Revisar.</p>
+        </li>
+        <li>
+          <h4>Paso 1 — Datos generales</h4>
+          <p>Elegí <strong>proyecto</strong>, <strong>empresa PDG</strong> que factura, <strong>fecha</strong> y escribí el detalle. Si tenés fondos pagados abiertos, aparece arriba un card celeste para <em>vincular</em> el gasto a uno de ellos (ver §5.5).</p>
+        </li>
+        <li>
+          <h4>Paso 2 — Montos y proveedor</h4>
+          <p>Nombre del proveedor, RUC/DV, monto neto e ITBMS (la app calcula el total automáticamente). Elegí el medio de pago; si es ACH, cheque o Yappy pide la cuenta o referencia.</p>
+        </li>
+        <li>
+          <h4>Paso 3 — Adjuntos</h4>
+          <p>Tocá <strong>Sacar foto</strong> para abrir la cámara y disparar el recibo directamente, o subí una imagen/PDF desde tu galería. Podés adjuntar más de uno si necesitás.</p>
+        </li>
+        <li>
+          <h4>Paso 4 — Revisar y enviar</h4>
+          <p>Chequeás el resumen. Podés <strong>Guardar borrador</strong> (queda en tu lista pero sin enviar) o <strong>Enviar a contabilidad</strong>.</p>
+        </li>
+      </ol>
+
+      <div class="mockup" style="max-width:380px;">
+        <div class="m-top">
+          <div class="m-logo">PDG</div>
+          <div class="m-title">Nueva solicitud</div>
+          <div class="m-icons"><span>✕</span></div>
+        </div>
+        <div class="m-body">
+          <div style="display:flex;gap:6px;font-size:10.5px;text-align:center;">
+            <div style="flex:1;padding:6px;border-bottom:2px solid var(--brand);color:var(--brand);font-weight:600;">1. Datos</div>
+            <div style="flex:1;padding:6px;color:var(--muted);">2. Montos</div>
+            <div style="flex:1;padding:6px;color:var(--muted);">3. Adjuntos</div>
+            <div style="flex:1;padding:6px;color:var(--muted);">4. Revisar</div>
+          </div>
+          <div class="m-card" style="border-left:3px solid var(--role-col);background:color-mix(in srgb, var(--role-col) 8%, var(--card));">
+            <h5 style="color:var(--role-col);">🔗 Vincular a solicitud de fondos (opcional)</h5>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--ink-soft);">— No vincular (reembolso post-gasto) —</div>
+          </div>
+          <div class="m-card">
+            <h5><span class="dot">🛡</span> Datos generales</h5>
+            <div style="font-size:11px;color:var(--muted);margin:6px 0 2px;">Proyecto <span style="color:var(--danger)">*</span></div>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;">Lomas San Francisco</div>
+            <div style="font-size:11px;color:var(--muted);margin:8px 0 2px;">Empresa PDG <span style="color:var(--danger)">*</span></div>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;">PDGSA</div>
+            <div style="font-size:11px;color:var(--muted);margin:8px 0 2px;">Detalle <span style="color:var(--danger)">*</span></div>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--ink-soft);">Combustible camión Ford para visita a obra Lomas...</div>
+          </div>
+          <div style="display:flex;gap:8px;padding-top:6px;border-top:1px solid var(--rule);">
+            <div class="m-btn outline" style="flex:1">Guardar</div>
+            <div class="m-btn primary" style="flex:1">Continuar →</div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 5.2 — Wizard de gasto. El card celeste aparece solo si tenés fondos pagados.</p>
+
+      <div class="callout warn">
+        <div class="label">Cuidado</div>
+        <p>Una vez que la solicitud está en <code>enviada</code> o más adelante, ya <strong>no podés editarla</strong> como colaborador. Si contabilidad te pide corrección, cambia a estado <code>corregir</code> y ahí sí volvés a editar.</p>
+      </div>
+
+      <!-- 5.3 Solicitar fondos -->
+      <h3 id="col-fondo"><span class="num">5.3</span> Solicitar fondos por adelantado</h3>
+      <p>Usá esta ruta cuando <strong>todavía no gastaste</strong> pero necesitás plata para hacerlo (materiales de obra, viajes, compras). La app crea una solicitud <code>SF-…</code> que después justificarás con recibos.</p>
+
+      <ol class="steps">
+        <li>
+          <h4>Tocá el <strong>+</strong> → <em>Solicitud de fondos</em></h4>
+          <p>Se abre un formulario más corto que el de gasto: no hay proveedor ni recibos (todavía).</p>
+        </li>
+        <li>
+          <h4>Completá el propósito</h4>
+          <p>Sé específico: escribí <em>"Compra de materiales para reposición de cemento y varillas – obra Lomas"</em>, no <em>"materiales"</em>. Contabilidad decide con eso si aprueba.</p>
+        </li>
+        <li>
+          <h4>Monto, fecha límite y medio de pago</h4>
+          <p>Cuánto necesitás, para cuándo (opcional), y cómo querés recibirlo. Si es ACH/cheque/Yappy, pedí la cuenta.</p>
+        </li>
+        <li>
+          <h4>Enviar a contabilidad</h4>
+          <p>Cambia de <code>borrador</code> a <code>enviado</code>. Contabilidad revisa; si aprueba, pasa a tesorería; tesorería te entrega el dinero y marca <code>pagado</code>.</p>
+        </li>
+      </ol>
+
+      <div class="mockup" style="max-width:380px;">
+        <div class="m-top">
+          <div class="m-logo">PDG</div>
+          <div class="m-title">Nueva solicitud de fondos</div>
+        </div>
+        <div class="m-body">
+          <div class="m-card">
+            <h5>📌 ¿Para qué es el dinero?</h5>
+            <div style="font-size:11px;color:var(--muted);margin:4px 0 2px;">Concepto / propósito <span style="color:var(--danger)">*</span></div>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;min-height:52px;">Compra de materiales para reposición de cemento y varillas – obra Lomas de San Francisco</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+              <div>
+                <div style="font-size:11px;color:var(--muted);">Proyecto <span style="color:var(--danger)">*</span></div>
+                <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;">Lomas SF</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);">Empresa PDG</div>
+                <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;">PDGSA</div>
+              </div>
+            </div>
+          </div>
+          <div class="m-card">
+            <h5>💰 Monto y entrega</h5>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <div style="font-size:11px;color:var(--muted);">Monto <span style="color:var(--danger)">*</span></div>
+                <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;">B/. 500.00</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);">Necesito para</div>
+                <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;">20/07/2026</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin:8px 0 2px;">Medio de pago <span style="color:var(--danger)">*</span></div>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;">ACH / Transferencia</div>
+            <div style="font-size:11px;color:var(--muted);margin:8px 0 2px;">Cuenta bancaria / referencia <span style="color:var(--danger)">*</span></div>
+            <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;">BAC 1234567 · Yohana Cerrud</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div class="m-btn outline" style="flex:1">Guardar borrador</div>
+            <div class="m-btn primary" style="flex:1">Enviar a contabilidad</div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 5.3 — Formulario de solicitud de fondos.</p>
+
+      <!-- 5.4 Justificar -->
+      <h3 id="col-just"><span class="num">5.4</span> Justificar el fondo (subir recibos)</h3>
+      <p>Cuando el fondo está en estado <code>pagado</code> (ya recibiste la plata), tu trabajo es subir los recibos hasta cerrar la carga.</p>
+
+      <ol class="steps">
+        <li>
+          <h4>Andá a la tab <em>Solicitudes → Fondos</em> y abrí el fondo pagado</h4>
+          <p>Vas a ver un card <em>Gastos justificativos (0)</em> con dos botones nuevos.</p>
+        </li>
+        <li>
+          <h4>Tocá <em>Cargar nuevo recibo/gasto</em></h4>
+          <p>Se abre el wizard de gasto <strong>ya pre-vinculado</strong> al fondo (proyecto, empresa y medio de pago vienen puestos). Solo completás proveedor, monto y foto.</p>
+        </li>
+        <li>
+          <h4>Enviás el gasto — el balance se actualiza solo</h4>
+          <p>Al volver al fondo vas a ver la sección <em>Balance</em>: Solicitado B/. 500 · Justificado B/. 145 · Diferencia B/. 355 pendientes de justificar.</p>
+        </li>
+        <li>
+          <h4>Repetí por cada recibo hasta terminar</h4>
+          <p>Cuando ya no vas a subir más recibos, tocá <em>Cerrar carga de recibos</em>. El fondo pasa a <code>justificado</code> y contabilidad se encarga del cierre.</p>
+        </li>
+      </ol>
+
+      <div class="mockup" style="max-width:400px;">
+        <div class="m-top">
+          <div class="m-logo">PDG</div>
+          <div class="m-title">SF-202607-0001</div>
+        </div>
+        <div class="m-body">
+          <div class="m-hero">
+            <div class="num">SF-202607-0001</div>
+            <div class="ttl">Compra de materiales – Lomas</div>
+            <div class="amt">B/. 500.00</div>
+            <div class="sub">Yohana Cerrud · 15 jul 2026</div>
+            <div class="st">💰 Pagado</div>
+          </div>
+          <div class="m-card" style="border-left:3px solid var(--warn);">
+            <h5>📊 Balance</h5>
+            <div class="m-row"><span class="k">Solicitado</span><span class="v">B/. 500.00</span></div>
+            <div class="m-row"><span class="k">Justificado (2 recibos)</span><span class="v">B/. 470.00</span></div>
+            <div class="m-row" style="border-top:2px solid var(--rule);padding-top:8px;"><span class="k" style="font-weight:700">Diferencia</span><span class="v" style="color:var(--warn);font-weight:700">+B/. 30.00</span></div>
+            <div class="m-balance warn" style="margin-top:10px">↩️ A devolver a PDG<small>El colaborador debe devolver B/. 30.00.</small></div>
+          </div>
+          <div class="m-card">
+            <h5>📄 Gastos justificativos (2)</h5>
+            <div style="font-size:12px;padding:6px 0;border-bottom:1px dashed var(--rule);">SP-202607-0002 · Ferretería XYZ · <strong>B/. 320.00</strong></div>
+            <div style="font-size:12px;padding:6px 0;">SP-202607-0003 · Depósito Central · <strong>B/. 150.00</strong></div>
+            <div class="m-btn outline block" style="margin-top:10px">+ Cargar nuevo recibo/gasto</div>
+            <div class="m-btn outline block" style="margin-top:6px">🔗 Vincular gasto ya cargado</div>
+          </div>
+          <div class="m-card">
+            <h5>Acciones</h5>
+            <div class="m-btn primary block">Agregar gasto justificativo</div>
+            <div class="m-btn outline block" style="margin-top:6px">Cerrar carga de recibos</div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 5.4 — Detalle del fondo pagado con balance en vivo.</p>
+
+      <!-- 5.5 Vincular existentes -->
+      <h3 id="col-vinc"><span class="num">5.5</span> Vincular gastos ya cargados</h3>
+      <p>Puede pasar que subiste un recibo pensando que era un reembolso normal y después te das cuenta que corresponde a un fondo ya pagado. No hay que rehacer nada:</p>
+
+      <ol class="steps">
+        <li>
+          <h4>Desde el fondo</h4>
+          <p>Abrí el fondo pagado → botón <em>Vincular gasto ya cargado</em>. Se abre un modal con la lista de tus gastos sin vínculo; elegís uno y el balance se recalcula.</p>
+        </li>
+        <li>
+          <h4>Desde el gasto</h4>
+          <p>Abrí el gasto → card celeste <em>Vincular a solicitud de fondos</em> → dropdown con tus fondos pagados → botón <em>🔗 Vincular al fondo seleccionado</em>.</p>
+        </li>
+        <li>
+          <h4>Si te equivocaste</h4>
+          <p>En el mismo card, cuando ya está vinculado, aparece <em>🔓 Desvincular de este fondo</em>. El balance vuelve al estado anterior.</p>
+        </li>
+      </ol>
+
+      <div class="callout info">
+        <div class="label">Permisos</div>
+        <p>Como colaborador solo podés vincular/desvincular <strong>tus propios</strong> gastos y mientras estén en <code>borrador</code> o <code>corregir</code>. Contabilidad y super admin pueden hacerlo en cualquier estado.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         6. CONTABILIDAD
+         ══════════════════════════════════════════════ -->
+    <section id="contabilidad">
+      <h2 class="section-title"><span class="num">06</span> Manual de <span class="chip cnt" style="font-size:14px;padding:3px 12px;">Contabilidad</span></h2>
+
+      <p class="lede">
+        Contabilidad decide qué se aprueba y controla que cada cuenta cuadre. Es el primer filtro de todo lo que llega y quien cierra los balances al final del ciclo.
+      </p>
+
+      <!-- 6.1 -->
+      <h3 id="cnt-band"><span class="num">6.1</span> La bandeja</h3>
+      <p>Cuando entrás a la app, la tab <strong>Bandeja</strong> (con un badge rojo que muestra cuántos ítems tenés pendientes) es tu centro de trabajo. Contiene todo lo que necesita tu decisión.</p>
+
+      <p>Adentro hay dos tabs, <strong>Gastos</strong> y <strong>Fondos</strong>. Cada una lista lo que está esperando revisión:</p>
+      <ul>
+        <li><strong>Gastos</strong> — solo los que están en estado <code>enviado</code>.</li>
+        <li><strong>Fondos</strong> — los que están en <code>enviado</code> (revisar la solicitud) y también los que están en <code>justificado</code> (cerrar el balance).</li>
+      </ul>
+
+      <div class="mockup" style="max-width:400px;">
+        <div class="m-top">
+          <div class="m-logo">PDG</div>
+          <div class="m-title">Bandeja de revisión</div>
+          <div class="m-icons"><span>📊</span><span>⚙</span></div>
+        </div>
+        <div class="m-body">
+          <div style="font-family:var(--serif);font-weight:600;font-size:15px;">Bandeja de revisión</div>
+          <div style="font-size:11.5px;color:var(--muted);">3 resultados</div>
+          <div class="m-tabs">
+            <div class="on">Gastos <span class="m-badge">2</span></div>
+            <div>Fondos <span class="m-badge">1</span></div>
+          </div>
+          <div class="m-list-item">
+            <div class="m-ico">📄</div>
+            <div class="m-item-body">
+              <div class="r1"><span class="num">SP-202607-0004</span><span class="amount">B/. 245.00</span></div>
+              <div class="title">Nafta camión F150</div>
+              <div class="meta"><span class="m-status env">📤 En revisión</span><span>📅 15 jul</span><span>👤 Ricardo S.</span></div>
+            </div>
+          </div>
+          <div class="m-list-item">
+            <div class="m-ico">📄</div>
+            <div class="m-item-body">
+              <div class="r1"><span class="num">SP-202607-0005</span><span class="amount">B/. 82.50</span></div>
+              <div class="title">Insumos ferretería</div>
+              <div class="meta"><span class="m-status env">📤 En revisión</span><span>📅 16 jul</span><span>👤 Ameth N.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="m-nav">
+          <div>🏠<div>Inicio</div></div>
+          <div>📋<div>Solicitudes</div></div>
+          <div class="fab">+</div>
+          <div class="active">📥<div>Bandeja</div><span class="m-badge" style="position:absolute;margin-top:-6px;font-size:9px">3</span></div>
+          <div>👤<div>Perfil</div></div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 6.1 — Bandeja de contabilidad con tabs y badges por tipo.</p>
+
+      <!-- 6.2 -->
+      <h3 id="cnt-rev"><span class="num">6.2</span> Aprobar, corregir o rechazar</h3>
+      <p>Tocás cualquier ítem de la bandeja para entrar al detalle. Abajo de todo tenés un card <em>Acciones</em> con tres botones:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Acción</th><th>Estado destino</th><th>Cuándo usarla</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong style="color:var(--brand-2)">Aprobar y pasar a tesorería</strong></td>
+              <td><code>aprobado_contabilidad</code></td>
+              <td>La solicitud está bien. Pasa a la bandeja de tesorería para el pago o la entrega del fondo.</td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--warn)">Solicitar corrección</strong></td>
+              <td><code>corregir</code></td>
+              <td>Falta el recibo, el monto no coincide, la cuenta bancaria está incompleta. Volvés al colaborador con una nota obligatoria.</td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--danger)">Rechazar</strong></td>
+              <td><code>rechazado</code></td>
+              <td>El gasto no procede (no aplica al proyecto, no está autorizado, etc.). Terminal. Requiere nota.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <div class="label">Corregir vs. rechazar</div>
+        <p><strong>Corregir</strong> devuelve al colaborador para arreglar y reenviar. <strong>Rechazar</strong> cierra la solicitud sin salida — usalo cuando no importa lo que hagan, no procede.</p>
+      </div>
+
+      <!-- 6.3 -->
+      <h3 id="cnt-ok"><span class="num">6.3</span> Marcar el ítem como OK o a revisar</h3>
+      <p>Independientemente del flujo principal, contabilidad puede marcar cada gasto individual con un estado de cuenta:</p>
+
+      <ul>
+        <li><strong style="color:var(--ok)">✅ Marcar OK</strong> · la cuenta cuadra. Nota opcional.</li>
+        <li><strong style="color:var(--warn)">⚠ A revisar</strong> · algo no cuadra pero no bloquea el flujo. Nota <strong>obligatoria</strong> — se lee después.</li>
+      </ul>
+
+      <p>Esto es útil sobre todo dentro de una solicitud de fondos: podés aprobar el gasto (para que la plata avance) pero marcarlo "a revisar" porque el monto no coincide con lo esperado.</p>
+
+      <div class="mockup" style="max-width:380px;">
+        <div class="m-body" style="padding:0;background:transparent;">
+          <div class="m-card" style="border-left:3px solid var(--role-cnt);">
+            <h5>✅ Estado del ítem (contabilidad)</h5>
+            <p style="font-size:12px;color:var(--muted);margin:4px 0 10px;">Marcá si la cuenta de este gasto cuadra o requiere revisión.</p>
+            <div style="display:flex;gap:6px;">
+              <div class="m-btn primary" style="flex:1">✅ Marcar OK</div>
+              <div class="m-btn warn" style="flex:1">⚠ A revisar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 6.3 — Card de "Estado del ítem" que solo ve contabilidad y super admin.</p>
+
+      <!-- 6.4 -->
+      <h3 id="cnt-sald"><span class="num">6.4</span> Cerrar el balance de un fondo</h3>
+      <p>Cuando el colaborador cerró la carga de recibos, el fondo aparece en <code>justificado</code> en tu bandeja. Ahí tu trabajo es cerrar el balance.</p>
+
+      <p>Tocás <em>Cerrar balance (saldar)</em>. Se abre un modal que <strong>detecta automáticamente</strong> qué corresponde hacer:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Balance</th><th>El modal pide</th><th>Efecto</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--ok)"><strong>Cuadrado</strong></td>
+              <td>Solo confirmar. Nota opcional.</td>
+              <td>Fondo pasa a <code>saldado</code> · sin movimiento.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--warn)"><strong>Sobró plata (+)</strong></td>
+              <td>Monto devuelto por el colaborador, fecha, método, referencia.</td>
+              <td>Registra la devolución dentro del cierre.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--danger)"><strong>Faltó plata (−)</strong></td>
+              <td>Monto girado por PDG, fecha, método, referencia.</td>
+              <td>Registra el giro adicional dentro del cierre.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mockup" style="max-width:380px;">
+        <div class="m-body" style="padding:16px;background:transparent;">
+          <div class="m-card" style="padding:0;overflow:hidden;">
+            <div style="background:var(--brand);color:#fff;padding:12px 14px;font-weight:700;font-size:14px;">Cerrar balance · SF-202607-0001</div>
+            <div style="padding:14px;background:var(--paper);">
+              <div style="background:var(--danger-soft);border-left:3px solid var(--danger);padding:10px 12px;border-radius:8px;margin-bottom:12px;">
+                <div style="font-weight:700;font-size:13px;color:var(--danger);">💸 PDG debe cubrir diferencia</div>
+                <div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">Solicitado: <strong>B/. 500</strong> · Justificado: <strong>B/. 530</strong></div>
+                <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">PDG debe girar <strong>B/. 30.00</strong> al colaborador.</div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Monto girado por PDG <span style="color:var(--danger)">*</span></div>
+              <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;">B/. 30.00</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <div>
+                  <div style="font-size:11px;color:var(--muted);">Fecha</div>
+                  <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;">16/07/2026</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--muted);">Método</div>
+                  <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;">ACH</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);">Referencia</div>
+              <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:12px;">BAC ACH 0012345</div>
+              <div class="m-btn primary block">✅ Confirmar cierre de balance</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 6.4 — Modal de cierre cuando faltó plata (PDG cubre).</p>
+
+      <div class="callout info">
+        <div class="label">Queda registrado</div>
+        <p>La nota de cierre se guarda con formato: <em>"PDG giró B/. 30.00 el 16 jul 2026 · ACH · Ref: BAC ACH 0012345"</em>. Los detalles del settlement quedan en la base de datos por si después necesitás un reporte.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         7. TESORERÍA
+         ══════════════════════════════════════════════ -->
+    <section id="tesoreria">
+      <h2 class="section-title"><span class="num">07</span> Manual de <span class="chip tes" style="font-size:14px;padding:3px 12px;">Tesorería</span></h2>
+
+      <p class="lede">
+        Tesorería ejecuta el pago o la entrega del dinero. Recibe solo lo que contabilidad ya aprobó. Su acción es corta y decisiva: <em>pagué</em> o <em>no puedo pagar (motivo)</em>.
+      </p>
+
+      <!-- 7.1 -->
+      <h3 id="tes-band"><span class="num">7.1</span> Tu bandeja</h3>
+      <p>La bandeja te muestra <strong>solo lo aprobado por contabilidad</strong>:</p>
+      <ul>
+        <li>Gastos en <code>aprobado_contabilidad</code> — hay que reembolsar al colaborador.</li>
+        <li>Fondos en <code>aprobado_contabilidad</code> — hay que entregarle la plata para que gaste.</li>
+      </ul>
+
+      <!-- 7.2 -->
+      <h3 id="tes-pago"><span class="num">7.2</span> Marcar como pagado</h3>
+      <p>Abrís el ítem. En <em>Acciones</em> tenés dos botones:</p>
+      <ul>
+        <li><strong style="color:var(--brand-2)">Marcar como pagado</strong> · pide una referencia opcional (número de transferencia, cheque, etc.). Ideal para dejar trazabilidad.</li>
+        <li><strong style="color:var(--danger)">Rechazar pago</strong> · requiere motivo. Se usa cuando algo bloquea el pago (cuenta errónea, monto no coincide con lo aprobado, etc.).</li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="label">Buena práctica</div>
+        <p>Aunque la referencia es opcional, ponéla siempre. En 6 meses cuando alguien pregunte "¿qué cheque cubrió esto?" vas a agradecértelo.</p>
+      </div>
+
+      <div class="mockup" style="max-width:380px;">
+        <div class="m-body" style="padding:16px;background:transparent;">
+          <div class="m-card" style="padding:0;overflow:hidden;">
+            <div style="background:var(--brand);color:#fff;padding:12px 14px;font-weight:700;font-size:14px;">Confirmar entrega de fondos</div>
+            <div style="padding:14px;background:var(--paper);">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Referencia/comprobante (opcional)</div>
+              <div style="background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:10px 10px;font-size:12px;min-height:48px;color:var(--ink-soft);">ACH BAC transferencia #789012</div>
+              <div class="m-btn primary block" style="margin-top:12px">Confirmar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-caption">Fig. 7.2 — Modal para marcar pagado. La referencia queda visible en el detalle.</p>
+
+      <div class="callout warn">
+        <div class="label">Sobre los fondos</div>
+        <p>Cuando marcás pagado un <strong>fondo</strong> (no un gasto), el flujo continúa: el colaborador va a empezar a subir recibos. Vos ya terminaste; el resto es contabilidad + colaborador.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         8. SUPER ADMIN
+         ══════════════════════════════════════════════ -->
+    <section id="superadmin">
+      <h2 class="section-title"><span class="num">08</span> Manual del <span class="chip sup" style="font-size:14px;padding:3px 12px;">Super Admin</span></h2>
+
+      <p class="lede">
+        El Super Admin hereda las capacidades de los otros tres roles y suma la administración de la app: usuarios, catálogos y correcciones destructivas.
+      </p>
+
+      <!-- 8.1 -->
+      <h3 id="sup-usr"><span class="num">8.1</span> Gestionar usuarios</h3>
+      <p>Desde <strong>Perfil → Gestionar usuarios</strong> tenés la lista completa. Podés:</p>
+      <ul>
+        <li><strong>Crear</strong> un usuario nuevo con nombre, correo, rol y contraseña inicial. Podrá iniciar sesión inmediatamente.</li>
+        <li><strong>Editar</strong> nombre, correo, teléfono, rol y estado (activo/inactivo).</li>
+        <li><strong>Cambiar la contraseña</strong> de cualquier usuario. Es el <em>único</em> flujo de recuperación de contraseña que existe.</li>
+        <li><strong>Eliminar</strong> un usuario.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="label">Modelo de contraseñas</div>
+        <p>La app <strong>no tiene "olvidé mi contraseña"</strong> por decisión de seguridad. Solo el Super Admin las asigna. Si un colaborador olvida la suya, la reasignás desde acá.</p>
+      </div>
+
+      <!-- 8.2 -->
+      <h3 id="sup-cat"><span class="num">8.2</span> Proyectos y empresas</h3>
+      <p>Desde <strong>Perfil → Proyectos y empresas</strong> mantenés los dropdowns que se ven en el wizard:</p>
+      <ul>
+        <li><strong>Proyectos</strong> — cada obra o categoría a la que se imputan gastos (Lomas SF, IT, Marketing, etc.).</li>
+        <li><strong>Empresas PDG</strong> — las razones sociales del grupo. Se puede tener varias (PDGSA, Prime Destination Group, etc.).</li>
+      </ul>
+      <p>Al desactivar (no borrar) un proyecto o empresa, deja de aparecer en el dropdown para solicitudes nuevas, pero las anteriores mantienen la referencia.</p>
+
+      <!-- 8.3 -->
+      <h3 id="sup-del"><span class="num">8.3</span> Eliminar solicitudes</h3>
+      <p>Un colaborador solo puede borrar sus <em>borradores</em>. El Super Admin puede eliminar <strong>cualquier</strong> gasto o fondo, en cualquier estado, propio o ajeno.</p>
+
+      <p>En el detalle de cualquier solicitud aparece abajo el botón:</p>
+      <p><strong style="color:var(--danger);font-family:var(--mono);font-size:14px;">🗑 Eliminar definitivamente (Super Admin)</strong></p>
+      <p>El confirm te muestra número, estado y lo que se va a perder. Si el fondo tiene gastos vinculados, esos gastos se <strong>desvinculan</strong> automáticamente (no se borran); si querés borrarlos también, hay que hacerlo uno por uno después.</p>
+
+      <div class="callout danger">
+        <div class="label">Sin retorno</div>
+        <p>La eliminación borra la solicitud, sus adjuntos y su historial de eventos de la base de datos. <strong>No hay papelera de reciclaje.</strong> Usá esta acción para corregir errores de carga, no como flujo normal.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         9. ESTADOS
+         ══════════════════════════════════════════════ -->
+    <section id="estados">
+      <h2 class="section-title"><span class="num">09</span> Estados · referencia</h2>
+
+      <p>Los mismos estados aplican a gastos y a fondos, salvo los dos últimos que son solo de fondos.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Estado</th><th>Icono</th><th>Significado</th><th>Quién avanza</th></tr></thead>
+          <tbody>
+            <tr><td><code>borrador</code></td><td>📝</td><td>Guardado, no enviado</td><td>Colaborador (envía)</td></tr>
+            <tr><td><code>enviado</code></td><td>📤</td><td>Esperando revisión</td><td>Contabilidad</td></tr>
+            <tr><td><code>corregir</code></td><td>✏️</td><td>Contabilidad pidió corregir</td><td>Colaborador (reenvía)</td></tr>
+            <tr><td><code>rechazado</code></td><td>❌</td><td>Contabilidad rechazó</td><td>— terminal —</td></tr>
+            <tr><td><code>aprobado_contabilidad</code></td><td>✅</td><td>Esperando pago</td><td>Tesorería</td></tr>
+            <tr><td><code>pagado</code></td><td>💰</td><td>Pago ejecutado o fondos entregados</td><td>Gasto: terminal · Fondo: colaborador (justifica)</td></tr>
+            <tr><td><code>rechazado_tesoreria</code></td><td>❌</td><td>Tesorería rechazó</td><td>— terminal —</td></tr>
+            <tr><td><code>justificado</code> <span style="color:var(--role-col);font-size:11px">solo fondos</span></td><td>🧾</td><td>Colaborador cerró la carga de recibos</td><td>Contabilidad</td></tr>
+            <tr><td><code>saldado</code> <span style="color:var(--role-col);font-size:11px">solo fondos</span></td><td>🏁</td><td>Balance cerrado — devolución, giro o cuadrado</td><td>— terminal —</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         10. FAQ
+         ══════════════════════════════════════════════ -->
+    <section id="faq">
+      <h2 class="section-title"><span class="num">10</span> Problemas comunes</h2>
+
+      <details class="faq">
+        <summary>Me equivoqué de tipo — cargué un gasto que en realidad es un fondo</summary>
+        <div class="faq-body">
+          <p>Si el gasto está en <code>borrador</code> o <code>corregir</code>, editalo desde su detalle. Si ya lo enviaste, pedile a Super Admin que lo elimine y volvés a cargarlo como fondo. No hay conversión automática — son entidades distintas.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Necesito editar un gasto ya enviado</summary>
+        <div class="faq-body">
+          <p>No podés como colaborador. Contactá a contabilidad para que use <em>Solicitar corrección</em>. El gasto pasa a estado <code>corregir</code>, ahí lo editás y lo reenviás.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Un colaborador olvidó su contraseña</summary>
+        <div class="faq-body">
+          <p>La reasigna el Super Admin desde <em>Perfil → Gestionar usuarios → (usuario) → Contraseña</em>. La app no tiene "olvidé mi contraseña" — es intencional.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>La cámara no se abre en iPhone</summary>
+        <div class="faq-body">
+          <p>Safari requiere que el sitio esté servido por HTTPS. La URL oficial ya cumple. Si estás probando desde <code>localhost</code> o una URL <code>http://</code>, solo funciona en Chrome desktop. Recomendación: usá siempre la URL oficial desde el celular.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>El balance del fondo no cuadra con mi cuenta</summary>
+        <div class="faq-body">
+          <p>Revisá que <strong>todos</strong> los recibos estén vinculados a ese fondo. Un gasto sin vincular no cuenta. Desde el detalle del fondo tocá <em>Vincular gasto ya cargado</em> — te muestra tus gastos sueltos y podés adosarlos.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Rechazaron mi solicitud pero era correcta</summary>
+        <div class="faq-body">
+          <p>Un rechazo es terminal — no se revierte por acción del colaborador. Contactá al revisor y explicá; si acepta, va a pedirle a Super Admin que elimine la solicitud y volvés a cargarla. Podés copiar el número original en el nuevo detalle para trazabilidad.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>PDG me giró la diferencia — ¿cómo lo registra la app?</summary>
+        <div class="faq-body">
+          <p>Cuando cerrás la carga de recibos, contabilidad ve <em>Cerrar balance (saldar)</em>. El modal detecta si sobró plata (colaborador devuelve) o faltó (PDG gira). Pide monto, fecha, método y referencia. Al confirmar, el fondo queda <code>saldado</code> con la nota estructurada.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Necesito un reporte de todo lo pagado en un mes</summary>
+        <div class="faq-body">
+          <p>Desde el ícono de estadísticas de la topbar (solo aparece para roles que revisan) accedés a <em>Reportes</em>. Ahí filtrás por colaborador, proyecto, fecha y estado, y podés descargar CSV.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- ══════ FOOTER ══════ -->
+    <footer style="margin-top:80px;padding-top:24px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;">
+      <span>Manual · Gastos PDG · v1.00</span>
+      <span>Actualizado 16 jul 2026</span>
+      <span>maximiliano.alcaide@pdgsa.com</span>
+    </footer>
+
+  </main>
+</div>
+</body></html>

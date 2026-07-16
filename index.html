@@ -2309,6 +2309,23 @@ function renderProfile(root){
       </p>
     </div>
     ${isSuper() ? superAdminCard() : ''}
+    <div class="card" style="border-left:4px solid var(--brand)">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24"><path d="M4 4h12a2 2 0 0 1 2 2v14M4 4v14a2 2 0 0 0 2 2h12M4 4h2M8 8h6M8 12h6M8 16h4"/></svg>
+        Ayuda y manual
+      </h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px">
+        Instructivo completo con flujos, permisos y diagramas por perfil.
+      </p>
+      <a href="manual.html" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="text-decoration:none;margin-bottom:8px">
+        <svg viewBox="0 0 24 24"><path d="M14 3l7 7-11 11H3v-7L14 3z"/></svg>
+        Ver manual online
+      </a>
+      <a href="Manual-Gastos-PDG-v1.00.pdf" target="_blank" rel="noopener" class="btn btn-outline btn-block" style="text-decoration:none" download>
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Descargar PDF
+      </a>
+    </div>
     <div class="card" style="text-align:center;background:transparent;box-shadow:none;padding:8px 0;color:var(--muted);font-size:12px">
       Reporte de Gastos PDG · <strong>${APP_VERSION}</strong> · actualizado ${APP_UPDATED}
     </div>

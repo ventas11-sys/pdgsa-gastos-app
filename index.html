@@ -2427,10 +2427,40 @@ async function createUser(){
   if(!name || !email || !pass){ toast('Faltan datos','warn'); return; }
   if(pass.length<6){ toast('Contraseña mínimo 6','warn'); return; }
   showLoader();
-  const { data, error } = await cloud.signUpUser(email, pass, { name, phone, role });
-  if(error){ hideLoader(); toast(error.message,'err'); return; }
-  // Aseguramos rol y datos vía upsert
-  const uid = data.user?.id;
+  // Preferimos la Edge Function admin-user (no cuenta contra el rate limit de emails).
+  // Si no está deployada o falla, caemos a signUp como fallback.
+  let uid = null;
+  let usedAdmin = false;
+  if(!cloud.local){
+    try{
+      const r = await cloud.callAdmin({ action:'createUser', email, password:pass, name, phone, role });
+      if(!r.error && (r.data?.ok || r.ok)){
+        uid = r.data?.userId || r.userId || null;
+        usedAdmin = true;
+      } else if(r.error){
+        const msg = String(r.error?.message || r.error || '');
+        // Si es un error de "no deployada" o similar, hacemos fallback silencioso
+        const isMissing = /404|not found|failed to fetch|network/i.test(msg);
+        if(!isMissing){
+          hideLoader(); toast(msg,'err'); return;
+        }
+      }
+    }catch(e){ /* fallback abajo */ }
+  }
+  if(!usedAdmin){
+    const { data, error } = await cloud.signUpUser(email, pass, { name, phone, role });
+    if(error){
+      hideLoader();
+      const msg = String(error.message||'');
+      if(/rate limit|too many|429/i.test(msg)){
+        toast('Límite de emails excedido. Desplegá la Edge Function admin-user, o creá el usuario desde el panel de Supabase → Authentication → Users.','err');
+      } else {
+        toast(msg,'err');
+      }
+      return;
+    }
+    uid = data.user?.id;
+  }
   if(uid){
     await cloud.upsertProfile({ id: uid, name, email, phone, role, active:true });
   }

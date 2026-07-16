@@ -3,6 +3,9 @@
 // Edge Function: admin-user  (Gastos PDG)
 // ============================================================
 // Permite al SUPER ADMIN gestionar cuentas de auth desde la app:
+//   - createUser:  crea una cuenta nueva con email confirmado
+//                  (NO usa signUp → no cuenta contra el rate limit
+//                  de emails de Supabase)
 //   - setPassword: asigna nueva contraseña
 //   - setEmail:    cambia el correo (login)
 //   - deleteUser:  elimina la cuenta
@@ -63,14 +66,47 @@ serve(async (req) => {
 
   let body: any = null;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
-  const { action, targetId, email, password } = body || {};
-  if (!action || !targetId) return json({ error: "Faltan action/targetId" }, 400);
+  const { action, targetId, email, password, name, phone, role } = body || {};
+  if (!action) return json({ error: "Falta action" }, 400);
+  // createUser no requiere targetId (lo asigna Supabase)
+  if (action !== "createUser" && !targetId) {
+    return json({ error: "Falta targetId" }, 400);
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
   try {
+    if (action === "createUser") {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return json({ error: "Correo inválido" }, 400);
+      }
+      if (!password || String(password).length < 6) {
+        return json({ error: "Contraseña mínimo 6 caracteres" }, 400);
+      }
+      const validRoles = ["colaborador", "contabilidad", "tesoreria", "super_admin"];
+      const finalRole = validRoles.includes(role) ? role : "colaborador";
+      const { data: created, error } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name: name || "", phone: phone || "", role: finalRole },
+      });
+      if (error) return json({ error: error.message }, 400);
+      // El trigger handle_new_user ya crea el profile con el rol de metadata,
+      // pero por si acaso lo forzamos con un update.
+      if (created?.user?.id) {
+        await admin.from("profiles").update({
+          name: name || email.split("@")[0],
+          phone: phone || null,
+          role: finalRole,
+          active: true,
+        }).eq("id", created.user.id);
+      }
+      return json({ ok: true, userId: created?.user?.id || null });
+    }
+
     if (action === "setPassword") {
       if (!password || String(password).length < 6) {
         return json({ error: "Contraseña mínimo 6 caracteres" }, 400);

@@ -524,12 +524,37 @@ const PAYMENT_METHODS = [
   { id:'yappy',    label:'Yappy' }
 ];
 
+// Bancos panameños conocidos (base cartera hipotecaria PDGSA + plaza general)
+// El input mantiene datalist → sugiere pero permite escribir uno nuevo.
+const BANKS_PA = [
+  'BAC International Bank (BAC Credomatic)',
+  'Banco Aliado',
+  'Banco Delta',
+  'Banco General',
+  'Banco Nacional de Panamá',
+  'Banistmo',
+  'Caja de Ahorros',
+  'Citibank Panamá',
+  'Credicorp Bank',
+  'Davivienda (Panamá)',
+  'Global Bank',
+  'MMG Bank',
+  'Mercantil Banco',
+  'Metrobank',
+  'Multibank',
+  'Prival Bank',
+  'Scotiabank (The Bank of Nova Scotia)',
+  'St. Georges Bank',
+  'Towerbank International',
+  'Unibank'
+];
+
 // Campos estructurados por medio de pago
 const PAYMENT_FIELDS = {
   tarjeta: [],
   efectivo: [],
   ach: [
-    { id:'bank',           label:'Banco',              required:true,  placeholder:'Ej: Banco General, BAC, Banistmo' },
+    { id:'bank',           label:'Banco',              required:true,  placeholder:'Elegí o escribí el banco', datalist:'banks_pa' },
     { id:'account_type',   label:'Tipo de cuenta',     required:true,  type:'select', options:[
       { value:'ahorro',    label:'Caja de ahorro' },
       { value:'corriente', label:'Cuenta corriente' }
@@ -538,7 +563,7 @@ const PAYMENT_FIELDS = {
     { id:'holder',         label:'Titular de la cuenta', required:true, placeholder:'Nombre completo del titular' }
   ],
   cheque: [
-    { id:'bank',   label:'Banco emisor',    required:false, placeholder:'Ej: Banco General' },
+    { id:'bank',   label:'Banco emisor',    required:false, placeholder:'Elegí o escribí el banco', datalist:'banks_pa' },
     { id:'holder', label:'A nombre de',     required:true,  placeholder:'Beneficiario del cheque' }
   ],
   yappy: [
@@ -553,26 +578,39 @@ function renderPaymentDetailFields(prefix, method, saved){
   const fields = PAYMENT_FIELDS[method] || [];
   if(fields.length === 0) return '';
   saved = saved || {};
-  return `<div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">${
-    fields.map(f => {
-      const val = saved[f.id] || '';
-      const req = f.required ? '<span class="req">*</span>' : '';
-      const inputStyle = f.id==='bank' || f.id==='holder' || f.id==='account_number' ? 'style="grid-column:span 2"' : '';
-      if(f.type === 'select'){
-        return `<div class="field" ${inputStyle}>
-          <label>${esc(f.label)} ${req}</label>
-          <select class="select" id="${prefix}-pd-${f.id}">
-            <option value="">— Elegí —</option>
-            ${f.options.map(o=>`<option value="${esc(o.value)}" ${val===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
-          </select>
-        </div>`;
-      }
+  // Renderizamos los datalists una sola vez al final (compartidos por todos los inputs con el mismo list-id)
+  const usedLists = new Set();
+  const html = fields.map(f => {
+    const val = saved[f.id] || '';
+    const req = f.required ? '<span class="req">*</span>' : '';
+    const inputStyle = f.id==='bank' || f.id==='holder' || f.id==='account_number' ? 'style="grid-column:span 2"' : '';
+    if(f.type === 'select'){
       return `<div class="field" ${inputStyle}>
         <label>${esc(f.label)} ${req}</label>
-        <input class="input" type="${f.type||'text'}" id="${prefix}-pd-${f.id}" value="${esc(val)}" placeholder="${esc(f.placeholder||'')}">
+        <select class="select" id="${prefix}-pd-${f.id}">
+          <option value="">— Elegí —</option>
+          ${f.options.map(o=>`<option value="${esc(o.value)}" ${val===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
+        </select>
       </div>`;
-    }).join('')
-  }</div>`;
+    }
+    let listAttr = '';
+    if(f.datalist){
+      const listId = `${prefix}-dl-${f.datalist}`;
+      listAttr = ` list="${listId}"`;
+      usedLists.add(f.datalist);
+    }
+    return `<div class="field" ${inputStyle}>
+      <label>${esc(f.label)} ${req}</label>
+      <input class="input" type="${f.type||'text'}" id="${prefix}-pd-${f.id}" value="${esc(val)}" placeholder="${esc(f.placeholder||'')}"${listAttr} autocomplete="off">
+    </div>`;
+  }).join('');
+  const datalists = [...usedLists].map(listName => {
+    const items = listName === 'banks_pa' ? BANKS_PA : [];
+    return `<datalist id="${prefix}-dl-${listName}">${
+      items.map(v => `<option value="${esc(v)}">`).join('')
+    }</datalist>`;
+  }).join('');
+  return `<div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">${html}</div>${datalists}`;
 }
 
 // Recolecta los detalles: devuelve { details, text, error? }

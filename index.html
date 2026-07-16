@@ -405,6 +405,9 @@ img{max-width:100%;display:block}
     <p id="login-hint" style="text-align:center;color:var(--muted);font-size:12px;margin:14px 0 0">
       ¿Olvidaste tu contraseña? Contactá al administrador.
     </p>
+    <p style="text-align:center;color:var(--muted);font-size:11px;margin:6px 0 0">
+      <span id="login-version">v1.00 · 2026-07-15</span>
+    </p>
     <div id="login-demo-creds" class="demo-creds hidden">
       <strong>🧪 Modo demo — 4 ejemplos rápidos:</strong>
       <div class="row"><span class="role">Super Admin</span><span class="email">maximiliano.alcaide@pdgsa.com</span></div>
@@ -492,7 +495,8 @@ img{max-width:100%;display:block}
 /* ============================================================
    GASTOS PDG · lógica de app
    ============================================================ */
-const APP_VERSION = 'v1.0';
+const APP_VERSION = 'v1.00';
+const APP_UPDATED = '2026-07-15';
 const STORAGE_KEY = 'gastos-pdg-v1';
 const BRAND_KEY   = 'gastos-pdg-brand-v1';
 
@@ -598,7 +602,16 @@ const STATUS_META = {
   rechazado:             { label:'Rechazado por contabilidad', icon:'❌' },
   aprobado_contabilidad: { label:'Aprobado — esperando pago', icon:'✅' },
   pagado:                { label:'Pagado',                  icon:'💰' },
+  justificado:           { label:'Justificado — pend. saldo', icon:'🧾' },
+  saldado:               { label:'Saldado',                 icon:'🏁' },
   rechazado_tesoreria:   { label:'Rechazado por tesorería', icon:'❌' }
+};
+
+const BALANCE_META = {
+  pendiente:      { label:'Balance pendiente',           icon:'⏳', color:'muted' },
+  cuadrado:       { label:'Cuadrado',                    icon:'✅', color:'ok' },
+  a_favor_pdg:    { label:'A devolver a PDG',            icon:'↩️', color:'warn' },
+  en_contra_pdg:  { label:'PDG debe cubrir diferencia',  icon:'💸', color:'danger' }
 };
 
 const ROLE_LABEL = {
@@ -614,9 +627,12 @@ let session = null;
 let profile = null;
 let currentView = 'home';
 let currentReqId = null;
+let currentFundId = null;
+let fundWizardDraft = null;
 let wizardStep = 0;
 let wizardDraft = null;
 let wizardFiles = [];   // { name, mime, size, url (data), blob }
+let listTab = 'gastos'; // 'gastos' | 'fondos'
 
 /* ---------- helpers ---------- */
 const $ = (s)=>document.querySelector(s);
@@ -673,9 +689,11 @@ function initState(){
     projects: [],
     companies: [],
     requests: [],
+    fundRequests: [],
     attachments: [],
     events: []
   });
+  if(!state.fundRequests) state.fundRequests = [];
 }
 function saveState(){ saveJSON(STORAGE_KEY, state); }
 
@@ -734,11 +752,12 @@ const cloud = {
       // en modo demo el estado vive en localStorage; nada que sincronizar
       return;
     }
-    const [pRes, prRes, cRes, rRes, aRes, eRes, sRes] = await Promise.all([
+    const [pRes, prRes, cRes, rRes, fRes, aRes, eRes, sRes] = await Promise.all([
       this.client.from('profiles').select('*'),
       this.client.from('projects').select('*').order('name'),
       this.client.from('companies').select('*').order('name'),
       this.client.from('expense_requests').select('*').order('created_at', {ascending:false}),
+      this.client.from('fund_requests').select('*').order('created_at', {ascending:false}),
       this.client.from('expense_attachments').select('*'),
       this.client.from('expense_events').select('*').order('created_at', {ascending:true}),
       this.client.from('app_settings').select('*').eq('key','brand').maybeSingle()
@@ -747,6 +766,7 @@ const cloud = {
     if(!prRes.error) state.projects = prRes.data || [];
     if(!cRes.error) state.companies = cRes.data || [];
     if(!rRes.error) state.requests = rRes.data || [];
+    if(!fRes.error) state.fundRequests = fRes.data || [];
     if(!aRes.error) state.attachments = aRes.data || [];
     if(!eRes.error) state.events = eRes.data || [];
     if(!sRes.error && sRes.data){
@@ -781,6 +801,32 @@ const cloud = {
       saveState(); return { data:true };
     }
     return await this.client.from('expense_requests').delete().eq('id', id);
+  },
+  async insertFundRequest(row){
+    if(this.local){
+      const now = new Date().toISOString();
+      const rec = { ...row, created_at: now, updated_at: now };
+      state.fundRequests.unshift(rec); saveState();
+      return { data: rec };
+    }
+    return await this.client.from('fund_requests').insert(row).select().maybeSingle();
+  },
+  async updateFundRequest(id, patch){
+    if(this.local){
+      const idx = state.fundRequests.findIndex(r=>r.id===id);
+      if(idx<0) return { error:{ message:'No existe' } };
+      state.fundRequests[idx] = { ...state.fundRequests[idx], ...patch, updated_at:new Date().toISOString() };
+      saveState();
+      return { data: state.fundRequests[idx] };
+    }
+    return await this.client.from('fund_requests').update(patch).eq('id', id).select().maybeSingle();
+  },
+  async deleteFundRequest(id){
+    if(this.local){
+      state.fundRequests = state.fundRequests.filter(r=>r.id!==id);
+      saveState(); return { data:true };
+    }
+    return await this.client.from('fund_requests').delete().eq('id', id);
   },
   async insertEvent(row){
     if(this.local){
@@ -1102,7 +1148,7 @@ function refreshBandejaBadge(){
   const btn = $('#nav-bandeja');
   if(!canReviewAny()){ btn?.classList.add('hidden'); return; }
   btn?.classList.remove('hidden');
-  const pend = pendingForMe().length;
+  const pend = pendingForMe().length + pendingFundsForMe().length;
   if(pend > 0){
     badge.textContent = pend;
     badge.classList.remove('hidden');
@@ -1123,6 +1169,19 @@ function pendingForMe(){
   const seen = new Set(); return merged.filter(r => seen.has(r.id) ? false : (seen.add(r.id), true));
 }
 
+function pendingFundsForMe(){
+  const merged = [];
+  if(isContab()){
+    merged.push(...(state.fundRequests||[]).filter(f=>f.status==='enviado'));
+    merged.push(...(state.fundRequests||[]).filter(f=>f.status==='justificado'));
+  }
+  if(isTeso()){
+    merged.push(...(state.fundRequests||[]).filter(f=>f.status==='aprobado_contabilidad'));
+  }
+  const seen = new Set();
+  return merged.filter(f => seen.has(f.id) ? false : (seen.add(f.id), true));
+}
+
 /* ---------- render router ---------- */
 function render(){
   const nav = currentView;
@@ -1140,6 +1199,72 @@ function render(){
   if(nav==='reportes')return renderReports(main);
   if(nav==='descargas')return renderDownloads(main);
   if(nav==='historial')return renderHistorial(main);
+  if(nav==='fondos')       return renderFundList(main, 'mis');
+  if(nav==='fondos-bandeja')return renderFundList(main, 'bandeja');
+  if(nav==='fondo-detail') return renderFundDetail(main, currentFundId);
+  if(nav==='fondo-nuevo')  return renderFundWizard(main);
+}
+
+/* ---------- fund_requests helpers ---------- */
+function fundStatusMeta(s){ return STATUS_META[s] || { label:s, icon:'' }; }
+function balanceMeta(k){ return BALANCE_META[k] || BALANCE_META.pendiente; }
+
+// Suma de gastos justificados (total) vinculados a este fund_request
+function fundJustifiedTotal(fundId){
+  return state.requests
+    .filter(r => r.fund_request_id === fundId)
+    .reduce((s,r)=> s + Number(r.total||0), 0);
+}
+
+// Cuenta de gastos vinculados + cuántos están OK por contabilidad
+function fundItemsSummary(fundId){
+  const items = state.requests.filter(r => r.fund_request_id === fundId);
+  return {
+    count: items.length,
+    ok: items.filter(r => r.item_ok === 'ok').length,
+    revisar: items.filter(r => r.item_ok === 'revisar').length
+  };
+}
+
+function computeBalance(fund){
+  const requested = Number(fund.requested_amount || 0);
+  const justified = fundJustifiedTotal(fund.id);
+  const diff = requested - justified; // + sobra, - falta
+  let kind = 'pendiente';
+  if(fund.status === 'saldado') kind = fund.balance_kind || 'cuadrado';
+  else if(Math.abs(diff) < 0.005) kind = 'cuadrado';
+  else if(diff > 0) kind = 'a_favor_pdg';
+  else kind = 'en_contra_pdg';
+  return { requested, justified, diff, kind };
+}
+
+function actionsForFund(f){
+  const acts = [];
+  const mine = f.requester_id === session.user.id;
+  if(mine && ['borrador','corregir'].includes(f.status)){
+    acts.push({ id:'fund_editar', label:'Editar', style:'outline' });
+    acts.push({ id:'fund_enviar', label:'Enviar a contabilidad', style:'primary' });
+  }
+  if(mine && f.status==='borrador'){
+    acts.push({ id:'fund_eliminar', label:'Eliminar borrador', style:'danger' });
+  }
+  if(isContab() && f.status==='enviado'){
+    acts.push({ id:'fund_aprobar_contab', label:'Aprobar y pasar a tesorería', style:'primary' });
+    acts.push({ id:'fund_corregir',       label:'Solicitar corrección', style:'warn' });
+    acts.push({ id:'fund_rechazar_contab',label:'Rechazar', style:'danger' });
+  }
+  if(isTeso() && f.status==='aprobado_contabilidad'){
+    acts.push({ id:'fund_pagar',        label:'Marcar como pagado (fondos entregados)', style:'primary' });
+    acts.push({ id:'fund_rechazar_teso',label:'Rechazar entrega', style:'danger' });
+  }
+  if(mine && f.status==='pagado'){
+    acts.push({ id:'fund_add_gasto',   label:'Agregar gasto justificativo', style:'primary' });
+    acts.push({ id:'fund_justificar',  label:'Cerrar carga de recibos', style:'secondary' });
+  }
+  if(isContab() && f.status==='justificado'){
+    acts.push({ id:'fund_saldar', label:'Cerrar balance (saldar)', style:'primary' });
+  }
+  return acts;
 }
 
 /* ============ HOME ============ */
@@ -1184,6 +1309,7 @@ function renderHome(root){
         Historial por colaborador
       </button>
     </div>`:''}
+    ${homeFundsCard()}
     <div class="card">
       <h3 class="section-title">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -1193,9 +1319,9 @@ function renderHome(root){
       <button class="btn btn-outline btn-block" style="margin-top:10px" onclick="go('mis')">Ver todas</button>
     </div>
     <div class="card">
-      <button class="btn btn-primary btn-block" onclick="startNewRequest()">
+      <button class="btn btn-primary btn-block" onclick="openNewMenu()">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-        Nueva solicitud de pago
+        Nueva solicitud
       </button>
     </div>
   `;
@@ -1215,7 +1341,7 @@ function renderHome(root){
 }
 
 function bandejaHomeCard(){
-  const pend = pendingForMe().length;
+  const pend = pendingForMe().length + pendingFundsForMe().length;
   if(pend===0) return '';
   return `<div class="card" style="background:linear-gradient(135deg,var(--brand-soft) 0%,#fff 100%);border-left:4px solid var(--brand)">
     <h3 class="section-title">
@@ -1223,6 +1349,26 @@ function bandejaHomeCard(){
       Tienes ${pend} solicitud${pend>1?'es':''} para revisar
     </h3>
     <button class="btn btn-primary btn-block" onclick="go('bandeja')">Ir a la bandeja</button>
+  </div>`;
+}
+
+function homeFundsCard(){
+  const myFunds = (state.fundRequests||[]).filter(f => f.requester_id === session.user.id);
+  const abiertos = myFunds.filter(f => ['enviado','aprobado_contabilidad','pagado','justificado'].includes(f.status));
+  if(abiertos.length===0 && myFunds.length===0) return '';
+  const totalPedido    = abiertos.reduce((s,f)=> s + Number(f.requested_amount||0), 0);
+  const totalJustif    = abiertos.reduce((s,f)=> s + fundJustifiedTotal(f.id), 0);
+  return `<div class="card" style="border-left:4px solid #6366f1">
+    <h3 class="section-title" style="color:#3730a3">
+      <svg viewBox="0 0 24 24" style="stroke:#3730a3"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/></svg>
+      Solicitudes de fondos
+    </h3>
+    <div class="stats" style="margin-bottom:12px">
+      <div class="stat" style="background:#eef2ff;color:#3730a3"><div class="n">${abiertos.length}</div><div class="l">Abiertas</div></div>
+      <div class="stat" style="background:#eef2ff;color:#3730a3"><div class="n">${fmtMoney(totalPedido).replace('B/. ','')}</div><div class="l">Solicitado</div></div>
+      <div class="stat" style="background:#eef2ff;color:#3730a3"><div class="n">${fmtMoney(totalJustif).replace('B/. ','')}</div><div class="l">Justificado</div></div>
+    </div>
+    <button class="btn btn-outline btn-block" onclick="go('fondos')">Ver mis fondos</button>
   </div>`;
 }
 
@@ -1260,6 +1406,7 @@ function renderList(root, mode){
         <p>${items.length} resultado${items.length===1?'':'s'}</p>
       </div>
     </div>
+    ${renderListTabs('gastos')}
     <div class="filter-row">
       <input class="input" id="fl-q" placeholder="Buscar…" value="${esc(filterState.q)}">
       <select class="select" id="fl-status">
@@ -1273,6 +1420,7 @@ function renderList(root, mode){
     </div>
     <div id="req-list"></div>
   `;
+  bindListTabs(root, mode);
   const list = $('#req-list');
   if(items.length===0){
     list.innerHTML = `<div class="list-empty">
@@ -1323,27 +1471,32 @@ function openDetail(id){
 
 /* ============ WIZARD (Nueva/Editar solicitud) ============ */
 function startNewRequest(){
+  // Si venimos "desde un fondo", pre-vinculamos y heredamos proyecto/empresa
+  const preFundId = window._prefillFundId || null;
+  window._prefillFundId = null;
+  const preFund = preFundId ? (state.fundRequests||[]).find(f=>f.id===preFundId) : null;
   wizardDraft = {
     id: uid(),
     number: '',
     requester_id: session.user.id,
     requester_name: profile.name,
-    project_id: '',
-    project_name: '',
-    company_id: state.companies[0]?.id || '',
-    company_name: state.companies[0]?.name || '',
-    company_ruc: state.companies[0]?.ruc || '',
+    project_id: preFund?.project_id || '',
+    project_name: preFund?.project_name || '',
+    company_id: preFund?.company_id || state.companies[0]?.id || '',
+    company_name: preFund?.company_name || state.companies[0]?.name || '',
+    company_ruc: state.companies.find(c=>c.id===(preFund?.company_id||state.companies[0]?.id))?.ruc || '',
     provider_name: '',
     provider_ruc: '',
     provider_dv: '',
     expense_date: todayISO(),
-    description: '',
+    description: preFund?.purpose ? '' : '',
     net_amount: 0,
     itbms: 0,
     total: 0,
-    payment_method: '',
-    bank_account: '',
-    status: 'borrador'
+    payment_method: preFund?.payment_method || '',
+    bank_account: preFund?.bank_account || '',
+    status: 'borrador',
+    fund_request_id: preFund?.id || null
   };
   wizardFiles = [];
   wizardStep = 0;
@@ -1402,7 +1555,31 @@ function cancelWizard(){
 function renderWizStep0(){
   const projs = state.projects.filter(p=>p.active!==false);
   const companies = state.companies.filter(c=>c.active!==false);
+  // Fondos abiertos del colaborador donde puede cargar recibos
+  const openFunds = (state.fundRequests||[])
+    .filter(f => f.requester_id === session.user.id && ['pagado'].includes(f.status));
+  const linkedFund = wizardDraft.fund_request_id
+    ? (state.fundRequests||[]).find(f=>f.id===wizardDraft.fund_request_id)
+    : null;
+  const fundSelectorHtml = (openFunds.length || linkedFund) ? `
+    <div class="card" style="border-left:4px solid #6366f1;background:#eef2ff">
+      <h3 class="section-title" style="color:#3730a3">
+        <svg viewBox="0 0 24 24" style="stroke:#3730a3"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/></svg>
+        Vincular a solicitud de fondos (opcional)
+      </h3>
+      <div class="field">
+        <label>Solicitud de fondos</label>
+        <select class="select" id="w-fund">
+          <option value="">— No vincular (reembolso post-gasto) —</option>
+          ${openFunds.map(f=>`<option value="${esc(f.id)}" ${f.id===wizardDraft.fund_request_id?'selected':''}>${esc(f.number||f.id)} · ${esc(f.purpose||'').slice(0,50)} · ${fmtMoney(f.requested_amount)}</option>`).join('')}
+          ${linkedFund && !openFunds.find(f=>f.id===linkedFund.id) ? `<option value="${esc(linkedFund.id)}" selected>${esc(linkedFund.number||linkedFund.id)} · ${esc(linkedFund.purpose||'').slice(0,50)}</option>`:''}
+        </select>
+        <div class="hint">Vinculá este recibo a una solicitud de fondos previa para que se compute en su balance.</div>
+      </div>
+    </div>
+  `:'';
   $('#wiz-body').innerHTML = `
+    ${fundSelectorHtml}
     <div class="card">
       <h3 class="section-title">
         <svg viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6l9-4z"/></svg>
@@ -1443,6 +1620,8 @@ function renderWizStep0(){
   };
 }
 function collectStep0(){
+  const fundEl = $('#w-fund');
+  if(fundEl) wizardDraft.fund_request_id = fundEl.value || null;
   const psel = $('#w-project').value;
   if(psel === '__manual'){
     wizardDraft.project_id = '';
@@ -1758,6 +1937,7 @@ async function persistWizard(nextStatus, submit){
       bank_account: wizardDraft.bank_account,
       status: wizardDraft.status,
       submitted_at: wizardDraft.submitted_at || null,
+      fund_request_id: wizardDraft.fund_request_id || null,
       data: wizardDraft.data || {}
     };
     let up;
@@ -1842,6 +2022,8 @@ async function renderDetail(root, id){
   const atts = state.attachments.filter(a=>a.expense_id===id);
   const events = state.events.filter(e=>e.expense_id===id).sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
   const acts = actionsFor(r);
+  const linkedFund = r.fund_request_id ? (state.fundRequests||[]).find(f=>f.id===r.fund_request_id) : null;
+  const canMarkOk = isContab() && r.status !== 'borrador';
 
   root.innerHTML = `
     <div style="margin-bottom:10px" class="no-print">
@@ -1872,6 +2054,34 @@ async function renderDetail(root, id){
         <strong>Rechazado por tesorería:</strong><br>
         ${esc(r.review_notes)}
       </div>` : ''}
+
+    ${linkedFund ? `
+      <div class="card" style="border-left:4px solid #6366f1;background:#eef2ff;cursor:pointer" onclick="openFundDetail('${esc(linkedFund.id)}')">
+        <strong>🔗 Vinculado a solicitud de fondos:</strong>
+        ${esc(linkedFund.number||linkedFund.id)} · ${esc(linkedFund.purpose||'').slice(0,80)}
+        <br><small style="color:var(--muted)">Solicitado ${fmtMoney(linkedFund.requested_amount)} · Ver detalle ▸</small>
+      </div>` : ''}
+
+    ${canMarkOk ? `
+      <div class="card" style="border-left:4px solid ${r.item_ok==='ok'?'var(--ok)':r.item_ok==='revisar'?'var(--warn)':'var(--info)'}">
+        <h3 class="section-title">
+          <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          Estado del ítem (contabilidad)
+        </h3>
+        <p style="margin:0 0 12px;color:var(--muted);font-size:13px">
+          Marcá si la cuenta de este gasto cuadra o requiere revisión.
+          ${r.item_ok ? `<br><strong>Último estado:</strong> ${r.item_ok==='ok'?'✅ OK':'⚠ A revisar'} · ${fmtDateTime(r.item_ok_at)}${r.item_ok_note?'<br><em>"'+esc(r.item_ok_note)+'"</em>':''}` : ''}
+        </p>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="markItemOk('${esc(id)}','ok')">✅ Marcar OK</button>
+          <button class="btn btn-warn" style="flex:1" onclick="markItemOk('${esc(id)}','revisar')">⚠ A revisar</button>
+        </div>
+      </div>` : (r.item_ok ? `
+      <div class="card" style="border-left:4px solid ${r.item_ok==='ok'?'var(--ok)':'var(--warn)'}">
+        <strong>${r.item_ok==='ok'?'✅ Contabilidad marcó este gasto como OK':'⚠ Contabilidad marcó este gasto como A revisar'}</strong>
+        ${r.item_ok_note?`<br><small style="color:var(--muted)">"${esc(r.item_ok_note)}"</small>`:''}
+        <br><small style="color:var(--muted)">${fmtDateTime(r.item_ok_at)}</small>
+      </div>` : '')}
 
     <div class="card">
       <h3 class="section-title">
@@ -2090,6 +2300,9 @@ function renderProfile(root){
       </p>
     </div>
     ${isSuper() ? superAdminCard() : ''}
+    <div class="card" style="text-align:center;background:transparent;box-shadow:none;padding:8px 0;color:var(--muted);font-size:12px">
+      Reporte de Gastos PDG · <strong>${APP_VERSION}</strong> · actualizado ${APP_UPDATED}
+    </div>
   `;
 }
 function superAdminCard(){
@@ -3515,6 +3728,620 @@ function closeLightbox(e){
   $('#lb-img').src = '';
 }
 
+/* ============================================================
+   FONDOS · Solicitudes de fondos (v1.00)
+   ============================================================ */
+function nextFundNumber(){
+  const yyyymm = new Date().toISOString().slice(0,7).replace('-','');
+  const prefix = 'SF-'+yyyymm+'-';
+  const nums = (state.fundRequests||[])
+    .map(f => (f.number||''))
+    .filter(n => n.startsWith(prefix))
+    .map(n => parseInt(n.slice(prefix.length),10))
+    .filter(n => !isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return prefix + String(next).padStart(4,'0');
+}
+
+function fundCardHtml(f, showRequester){
+  const st = fundStatusMeta(f.status);
+  const bal = computeBalance(f);
+  const bm = balanceMeta(bal.kind);
+  return `<div class="req-card" data-fund="${esc(f.id)}">
+    <div class="icon-wrap" style="background:#eef2ff;color:#3730a3">
+      <svg viewBox="0 0 24 24"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/><circle cx="12" cy="12" r="2"/></svg>
+    </div>
+    <div class="body">
+      <div class="row1">
+        <div class="num">${esc(f.number || ('SF-'+String(f.id).slice(-6)))}</div>
+        <div class="amount">${fmtMoney(f.requested_amount)}</div>
+      </div>
+      <div class="title">${esc(f.purpose || 'Solicitud de fondos')}</div>
+      <div class="meta">
+        <span class="badge badge-${f.status}">${st.icon} ${st.label}</span>
+        ${f.project_name?`<span>🏗 ${esc(f.project_name)}</span>`:''}
+        ${showRequester && f.requester_name?`<span>👤 ${esc(f.requester_name)}</span>`:''}
+        ${f.status==='pagado' || f.status==='justificado' || f.status==='saldado' ? `<span>${bm.icon} ${bm.label}</span>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderListTabs(active){
+  const pendGastos = pendingForMe().length;
+  const pendFondos = pendingFundsForMe().length;
+  return `<div class="tabs" style="display:flex;gap:6px;margin-bottom:12px;background:#fff;padding:4px;border-radius:12px;box-shadow:var(--shadow)">
+    <button class="tab-btn ${active==='gastos'?'active':''}" data-tab="gastos" style="flex:1;padding:10px;border-radius:10px;font-weight:600;font-size:13px;background:${active==='gastos'?'var(--brand)':'transparent'};color:${active==='gastos'?'#fff':'var(--muted)'}">Gastos${pendGastos&&active!=='gastos'?` <span class="nav-badge" style="position:static;margin-left:6px">${pendGastos}</span>`:''}</button>
+    <button class="tab-btn ${active==='fondos'?'active':''}" data-tab="fondos" style="flex:1;padding:10px;border-radius:10px;font-weight:600;font-size:13px;background:${active==='fondos'?'var(--brand)':'transparent'};color:${active==='fondos'?'#fff':'var(--muted)'}">Fondos${pendFondos&&active!=='fondos'?` <span class="nav-badge" style="position:static;margin-left:6px">${pendFondos}</span>`:''}</button>
+  </div>`;
+}
+
+function bindListTabs(root, mode){
+  root.querySelectorAll('[data-tab]').forEach(b=>{
+    b.onclick = ()=>{
+      const t = b.dataset.tab;
+      if(t==='gastos'){
+        if(mode==='bandeja') go('bandeja'); else go('mis');
+      }else{
+        if(mode==='bandeja') go('fondos-bandeja'); else go('fondos');
+      }
+    };
+  });
+}
+
+function renderFundList(root, mode){
+  setNav(mode==='bandeja' ? 'bandeja' : 'mis');
+  const isBandeja = mode === 'bandeja';
+  const filterState = window._filterFundState || (window._filterFundState = { status:'', project:'', q:'' });
+  let items;
+  if(isBandeja){
+    items = pendingFundsForMe();
+  }else{
+    items = (state.fundRequests||[]).filter(f => f.requester_id === session.user.id);
+  }
+  if(filterState.status) items = items.filter(f => f.status===filterState.status);
+  if(filterState.project) items = items.filter(f => f.project_id===filterState.project);
+  if(filterState.q){
+    const q = filterState.q.toLowerCase();
+    items = items.filter(f =>
+      (f.number||'').toLowerCase().includes(q) ||
+      (f.purpose||'').toLowerCase().includes(q) ||
+      (f.requester_name||'').toLowerCase().includes(q)
+    );
+  }
+  items.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+
+  const statusOptions = Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  const projectOptions = state.projects.filter(p=>p.active!==false).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+
+  root.innerHTML = `
+    <div class="welcome">
+      <div>
+        <h2>${isBandeja ? 'Bandeja de revisión' : 'Solicitudes de fondos'}</h2>
+        <p>${items.length} resultado${items.length===1?'':'s'}</p>
+      </div>
+    </div>
+    ${renderListTabs('fondos')}
+    <div class="filter-row">
+      <input class="input" id="fl-q" placeholder="Buscar…" value="${esc(filterState.q)}">
+      <select class="select" id="fl-status">
+        <option value="">Todos los estados</option>
+        ${statusOptions}
+      </select>
+      <select class="select" id="fl-project">
+        <option value="">Todos los proyectos</option>
+        ${projectOptions}
+      </select>
+    </div>
+    ${!isBandeja ? `<button class="btn btn-primary btn-block" style="margin-bottom:12px" onclick="startNewFund()">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Nueva solicitud de fondos
+    </button>`:''}
+    <div id="fund-list"></div>
+  `;
+  bindListTabs(root, mode);
+  const list = $('#fund-list');
+  if(items.length===0){
+    list.innerHTML = `<div class="list-empty">
+      <svg viewBox="0 0 24 24"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/></svg>
+      <div>Sin solicitudes de fondos.</div>
+    </div>`;
+  }else{
+    list.innerHTML = items.map(f => fundCardHtml(f, isBandeja)).join('');
+    list.querySelectorAll('[data-fund]').forEach(el=>{
+      el.onclick = ()=> openFundDetail(el.dataset.fund);
+    });
+  }
+  const q = $('#fl-q'); q.value = filterState.q;
+  q.oninput = ()=>{ filterState.q = q.value; renderFundList($('#main'), mode); };
+  $('#fl-status').value = filterState.status;
+  $('#fl-status').onchange = (e)=>{ filterState.status = e.target.value; renderFundList($('#main'), mode); };
+  $('#fl-project').value = filterState.project;
+  $('#fl-project').onchange = (e)=>{ filterState.project = e.target.value; renderFundList($('#main'), mode); };
+}
+
+function openFundDetail(id){
+  currentFundId = id;
+  currentView = 'fondo-detail';
+  render();
+}
+
+function renderFundDetail(root, id){
+  $('#bottomnav').classList.remove('hide');
+  const f = (state.fundRequests||[]).find(x => x.id===id);
+  if(!f){
+    root.innerHTML = `<div class="card"><p>Solicitud de fondos no encontrada.</p><button class="btn btn-outline" onclick="go('fondos')">Volver</button></div>`;
+    return;
+  }
+  const st = fundStatusMeta(f.status);
+  const bal = computeBalance(f);
+  const bm = balanceMeta(bal.kind);
+  const acts = actionsForFund(f);
+  const gastos = state.requests.filter(r => r.fund_request_id === id);
+  const items = fundItemsSummary(id);
+  const mine = f.requester_id === session.user.id;
+
+  root.innerHTML = `
+    <div style="margin-bottom:10px" class="no-print">
+      <button class="btn btn-ghost" onclick="go('fondos')" style="padding-left:0">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Volver a fondos
+      </button>
+    </div>
+    <div class="detail-header">
+      <div class="num">${esc(f.number || ('SF-'+String(f.id).slice(-6)))}</div>
+      <div class="title">${esc(f.purpose || 'Solicitud de fondos')}</div>
+      <div class="amount">${fmtMoney(f.requested_amount)}</div>
+      <div class="sub">Solicitante: ${esc(f.requester_name||'—')} · ${fmtDate(f.requested_date)}</div>
+      <span class="badge badge-${f.status}">${st.icon} ${st.label}</span>
+    </div>
+
+    ${f.status==='corregir' && f.review_notes ? `
+      <div class="card" style="border-left:4px solid var(--warn);background:#fffbeb">
+        <strong>Contabilidad pidió corregir:</strong><br>${esc(f.review_notes)}
+      </div>`:''}
+    ${f.status==='rechazado' && f.review_notes ? `
+      <div class="card" style="border-left:4px solid var(--danger);background:#fef2f2">
+        <strong>Rechazado por contabilidad:</strong><br>${esc(f.review_notes)}
+      </div>`:''}
+    ${f.status==='rechazado_tesoreria' && f.review_notes ? `
+      <div class="card" style="border-left:4px solid var(--danger);background:#fef2f2">
+        <strong>Rechazado por tesorería:</strong><br>${esc(f.review_notes)}
+      </div>`:''}
+
+    <div class="card">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 10h16"/></svg>
+        Resumen de la solicitud
+      </h3>
+      <div class="detail-row"><span class="k">Para qué</span><span class="v">${esc(f.purpose||'—')}</span></div>
+      <div class="detail-row"><span class="k">Proyecto</span><span class="v">${esc(f.project_name||'—')}</span></div>
+      <div class="detail-row"><span class="k">Empresa PDG</span><span class="v">${esc(f.company_name||'—')}</span></div>
+      <div class="detail-row"><span class="k">Monto solicitado</span><span class="v" style="color:var(--brand);font-weight:700">${fmtMoney(f.requested_amount)}</span></div>
+      ${f.needed_by?`<div class="detail-row"><span class="k">Necesario para</span><span class="v">${fmtDate(f.needed_by)}</span></div>`:''}
+      <div class="detail-row"><span class="k">Medio de pago</span><span class="v">${esc(PAYMENT_METHODS.find(m=>m.id===f.payment_method)?.label||'—')}</span></div>
+      ${f.bank_account?`<div class="detail-row"><span class="k">Cuenta / Ref.</span><span class="v">${esc(f.bank_account)}</span></div>`:''}
+      ${f.paid_at?`<div class="detail-row"><span class="k">Fondos entregados</span><span class="v">${fmtDateTime(f.paid_at)}${f.payment_ref?'<br><small>Ref: '+esc(f.payment_ref)+'</small>':''}</span></div>`:''}
+    </div>
+
+    ${['pagado','justificado','saldado'].includes(f.status) ? `
+    <div class="card" style="border-left:4px solid ${bal.kind==='cuadrado'?'var(--ok)':bal.kind==='a_favor_pdg'?'var(--warn)':'var(--danger)'}">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+        Balance
+      </h3>
+      <div class="detail-row"><span class="k">Solicitado</span><span class="v">${fmtMoney(bal.requested)}</span></div>
+      <div class="detail-row"><span class="k">Justificado (${items.count} recibo${items.count===1?'':'s'})</span><span class="v">${fmtMoney(bal.justified)}</span></div>
+      <div class="detail-row" style="border-top:2px solid var(--border);padding-top:10px;margin-top:6px">
+        <span class="k" style="font-weight:700">Diferencia</span>
+        <span class="v" style="font-weight:700;color:${bal.kind==='cuadrado'?'var(--ok)':bal.kind==='a_favor_pdg'?'var(--warn)':'var(--danger)'}">${bal.diff>=0?'+':''}${fmtMoney(Math.abs(bal.diff))}</span>
+      </div>
+      <div class="summary-pill" style="margin-top:12px;background:${bal.kind==='cuadrado'?'#f0fdf4':bal.kind==='a_favor_pdg'?'#fffbeb':'#fef2f2'};color:${bal.kind==='cuadrado'?'var(--ok)':bal.kind==='a_favor_pdg'?'#92400e':'var(--danger)'}">
+        ${bm.icon} ${bm.label}
+        ${f.status==='saldado' && f.balance_notes ? `<span style="font-size:12px;font-weight:500">${esc(f.balance_notes)}</span>` : ''}
+      </div>
+      ${f.status==='saldado' && f.balance_closed_at ? `<div class="detail-row" style="margin-top:8px"><span class="k">Cerrado</span><span class="v">${fmtDateTime(f.balance_closed_at)}</span></div>` : ''}
+    </div>` : ''}
+
+    <div class="card">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24"><path d="M6 3h9l6 6v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v6h6"/></svg>
+        Gastos justificativos (${gastos.length})${items.ok?` · ${items.ok} OK`:''}${items.revisar?` · ${items.revisar} a revisar`:''}
+      </h3>
+      <div id="fund-gastos-list"></div>
+      ${gastos.length===0?'<p style="color:var(--muted);font-size:13px;margin:8px 0 0">Sin recibos cargados aún.</p>':''}
+      ${mine && f.status==='pagado' ? `<button class="btn btn-outline btn-block" style="margin-top:10px" onclick="startGastoForFund('${esc(f.id)}')">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Agregar recibo/gasto
+      </button>`:''}
+    </div>
+
+    ${acts.length>0 ? `<div class="card no-print">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Acciones
+      </h3>
+      ${acts.map(a=>`<button class="btn btn-${a.style} btn-block" style="margin-bottom:8px" onclick="runFundAction('${esc(id)}','${a.id}')">${esc(a.label)}</button>`).join('')}
+    </div>`:''}
+  `;
+  const gl = $('#fund-gastos-list');
+  if(gastos.length){
+    gl.innerHTML = gastos.map(r=>{
+      const rst = STATUS_META[r.status] || { label:r.status, icon:'' };
+      const okBadge = r.item_ok==='ok' ? `<span class="badge" style="background:#dcfce7;color:#166534">✅ OK</span>`
+                    : r.item_ok==='revisar' ? `<span class="badge" style="background:#fef3c7;color:#92400e">⚠ Revisar</span>`
+                    : '';
+      return `<div class="req-card" data-req="${esc(r.id)}">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24"><path d="M6 3h9l6 6v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v6h6"/></svg></div>
+        <div class="body">
+          <div class="row1">
+            <div class="num">${esc(r.number || ('#'+String(r.id).slice(-6)))}</div>
+            <div class="amount">${fmtMoney(r.total)}</div>
+          </div>
+          <div class="title">${esc(r.description || r.provider_name || 'Gasto')}</div>
+          <div class="meta">
+            <span class="badge badge-${r.status}">${rst.icon} ${rst.label}</span>
+            ${okBadge}
+            <span>📅 ${fmtDate(r.expense_date)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    gl.querySelectorAll('[data-req]').forEach(el=>{
+      el.onclick = ()=> openDetail(el.dataset.req);
+    });
+  }
+}
+
+/* ============ FUND WIZARD ============ */
+function startNewFund(){
+  fundWizardDraft = {
+    id: uid(),
+    number: '',
+    requester_id: session.user.id,
+    requester_name: profile.name,
+    project_id: '',
+    project_name: '',
+    company_id: state.companies[0]?.id || '',
+    company_name: state.companies[0]?.name || '',
+    purpose: '',
+    requested_amount: 0,
+    requested_date: todayISO(),
+    needed_by: '',
+    payment_method: '',
+    bank_account: '',
+    status: 'borrador',
+    data: {}
+  };
+  currentView = 'fondo-nuevo';
+  $('#bottomnav').classList.add('hide');
+  render();
+}
+
+function editExistingFund(f){
+  fundWizardDraft = { ...f };
+  currentView = 'fondo-nuevo';
+  $('#bottomnav').classList.add('hide');
+  render();
+}
+
+function renderFundWizard(root){
+  const d = fundWizardDraft;
+  const projectOptions = state.projects.filter(p=>p.active!==false)
+    .map(p=>`<option value="${esc(p.id)}" ${p.id===d.project_id?'selected':''}>${esc(p.name)}</option>`).join('');
+  const companyOptions = state.companies.filter(c=>c.active!==false)
+    .map(c=>`<option value="${esc(c.id)}" ${c.id===d.company_id?'selected':''}>${esc(c.name)}</option>`).join('');
+  const payOptions = PAYMENT_METHODS
+    .map(m=>`<option value="${m.id}" ${m.id===d.payment_method?'selected':''}>${esc(m.label)}</option>`).join('');
+  const needsBank = ['ach','cheque','yappy'].includes(d.payment_method);
+
+  root.innerHTML = `
+    <div class="wizard">
+      <div class="wizard-head">
+        <button class="btn btn-ghost" onclick="cancelFundWizard()">← Cancelar</button>
+        <h2>Nueva solicitud de fondos</h2>
+        <p>Pedí plata por adelantado indicando para qué la necesitás. Después subís los recibos.</p>
+      </div>
+      <div class="card">
+        <h3 class="section-title">📌 ¿Para qué es el dinero?</h3>
+        <div class="field">
+          <label>Concepto / propósito <span class="req">*</span></label>
+          <textarea class="textarea" id="fw-purpose" placeholder="Ej: Compra de materiales para obra Lomas de San Francisco - reposición de cemento y varillas">${esc(d.purpose||'')}</textarea>
+          <div class="hint">Explicá con detalle en qué se va a gastar. Contabilidad lo lee para aprobar.</div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Proyecto <span class="req">*</span></label>
+            <select class="select" id="fw-project"><option value="">— Elegí —</option>${projectOptions}</select>
+          </div>
+          <div class="field">
+            <label>Empresa PDG que factura</label>
+            <select class="select" id="fw-company">${companyOptions}</select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="section-title">💰 Monto y entrega</h3>
+        <div class="grid-2">
+          <div class="field">
+            <label>Monto solicitado <span class="req">*</span></label>
+            <div class="input-suffix">
+              <span class="unit">B/.</span>
+              <input type="number" step="0.01" min="0" class="input" id="fw-amount" value="${d.requested_amount||''}" placeholder="0.00">
+            </div>
+          </div>
+          <div class="field">
+            <label>Necesario para (fecha)</label>
+            <input type="date" class="input" id="fw-needed" value="${esc(d.needed_by||'')}">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Medio de pago <span class="req">*</span></label>
+            <select class="select" id="fw-pay"><option value="">— Elegí —</option>${payOptions}</select>
+          </div>
+          <div class="field" id="fw-bank-field" style="${needsBank?'':'display:none'}">
+            <label>Cuenta bancaria / referencia ${needsBank?'<span class="req">*</span>':''}</label>
+            <input class="input" id="fw-bank" value="${esc(d.bank_account||'')}" placeholder="Ej: BAC 1234567 - Juan Pérez">
+          </div>
+        </div>
+      </div>
+      <div class="wizard-foot" style="display:flex;gap:8px;padding:14px 0">
+        <button class="btn btn-outline" style="flex:1" onclick="saveFundDraft()">Guardar borrador</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitFundWizard()">Enviar a contabilidad</button>
+      </div>
+    </div>
+  `;
+  const payEl = $('#fw-pay');
+  payEl.onchange = ()=>{
+    const need = ['ach','cheque','yappy'].includes(payEl.value);
+    $('#fw-bank-field').style.display = need ? '' : 'none';
+    $('#fw-bank-field').querySelector('label').innerHTML = 'Cuenta bancaria / referencia ' + (need?'<span class="req">*</span>':'');
+  };
+}
+
+function collectFundDraft(){
+  const projId = $('#fw-project').value;
+  const proj = state.projects.find(p=>p.id===projId);
+  const compId = $('#fw-company').value;
+  const comp = state.companies.find(c=>c.id===compId);
+  fundWizardDraft = {
+    ...fundWizardDraft,
+    purpose: $('#fw-purpose').value.trim(),
+    project_id: projId, project_name: proj?.name || '',
+    company_id: compId, company_name: comp?.name || '',
+    requested_amount: parseFloat($('#fw-amount').value) || 0,
+    needed_by: $('#fw-needed').value || null,
+    payment_method: $('#fw-pay').value,
+    bank_account: $('#fw-bank')?.value || ''
+  };
+  return fundWizardDraft;
+}
+
+function validateFundDraft(d, forSubmit){
+  if(!d.purpose) return 'Falta el concepto/propósito';
+  if(!d.project_id) return 'Elegí un proyecto';
+  if(!d.requested_amount || d.requested_amount <= 0) return 'Ingresá un monto mayor a 0';
+  if(forSubmit){
+    if(!d.payment_method) return 'Elegí un medio de pago';
+    if(['ach','cheque','yappy'].includes(d.payment_method) && !d.bank_account) return 'Falta la cuenta/referencia bancaria';
+  }
+  return null;
+}
+
+async function saveFundDraft(){
+  const d = collectFundDraft();
+  const err = validateFundDraft(d, false);
+  if(err){ toast(err,'warn'); return; }
+  await persistFund(d, 'borrador');
+  toast('Borrador guardado','ok');
+  go('fondos');
+}
+
+async function submitFundWizard(){
+  const d = collectFundDraft();
+  const err = validateFundDraft(d, true);
+  if(err){ toast(err,'warn'); return; }
+  await persistFund(d, 'enviado');
+  toast('Solicitud enviada a contabilidad','ok');
+  go('fondos');
+}
+
+async function persistFund(d, targetStatus){
+  showLoader();
+  try{
+    const existing = (state.fundRequests||[]).find(x=>x.id===d.id);
+    const isNew = !existing;
+    const now = new Date().toISOString();
+    const row = {
+      id: d.id,
+      number: existing?.number || nextFundNumber(),
+      requester_id: d.requester_id,
+      requester_name: d.requester_name,
+      project_id: d.project_id || null,
+      project_name: d.project_name || null,
+      company_id: d.company_id || null,
+      company_name: d.company_name || null,
+      purpose: d.purpose,
+      requested_amount: d.requested_amount,
+      requested_date: d.requested_date || todayISO(),
+      needed_by: d.needed_by || null,
+      payment_method: d.payment_method || null,
+      bank_account: d.bank_account || null,
+      status: targetStatus,
+      submitted_at: targetStatus==='enviado' ? now : (existing?.submitted_at || null)
+    };
+    let saved;
+    if(isNew){
+      const ins = await cloud.insertFundRequest(row);
+      if(ins.error) throw ins.error;
+      saved = ins.data || row;
+      state.fundRequests.unshift(saved);
+    }else{
+      const up = await cloud.updateFundRequest(d.id, row);
+      if(up.error) throw up.error;
+      saved = up.data || row;
+      const idx = state.fundRequests.findIndex(x=>x.id===d.id);
+      if(idx>=0) state.fundRequests[idx] = saved;
+    }
+    saveState();
+    // event
+    await addFundEvent(d.id, isNew?'crear':'editar', existing?.status || null, targetStatus, null);
+    if(targetStatus==='enviado' && (isNew || existing?.status !== 'enviado')){
+      await addFundEvent(d.id, 'enviar', existing?.status || 'borrador', 'enviado', null);
+    }
+    refreshBandejaBadge();
+  }catch(e){
+    console.error(e);
+    toast('Error: '+(e.message||e),'err');
+  }
+  hideLoader();
+}
+
+function cancelFundWizard(){
+  fundWizardDraft = null;
+  $('#bottomnav').classList.remove('hide');
+  go('fondos');
+}
+
+async function runFundAction(id, act){
+  const f = (state.fundRequests||[]).find(x=>x.id===id);
+  if(!f) return;
+  if(act==='fund_editar'){ editExistingFund(f); return; }
+  if(act==='fund_eliminar'){
+    if(!confirm('¿Eliminar este borrador definitivamente?')) return;
+    showLoader();
+    await cloud.deleteFundRequest(id);
+    state.fundRequests = state.fundRequests.filter(x=>x.id!==id);
+    saveState();
+    hideLoader();
+    toast('Borrador eliminado','ok');
+    go('fondos');
+    return;
+  }
+  if(act==='fund_add_gasto'){ startGastoForFund(id); return; }
+  if(act==='fund_enviar'){
+    await changeFundStatus(f, 'enviado', 'enviar', null, { submitted_at: new Date().toISOString() });
+    toast('Enviado a contabilidad','ok'); render(); return;
+  }
+  const promptMap = {
+    fund_aprobar_contab:  { evt:'aprobar',       status:'aprobado_contabilidad', title:'Aprobar solicitud de fondos', note:'Observación (opcional)', required:false, patch:{ reviewed_by:session.user.id, reviewed_at:new Date().toISOString() } },
+    fund_corregir:        { evt:'corregir',      status:'corregir',              title:'Solicitar corrección', note:'¿Qué debe corregirse?', required:true,  patch:{ reviewed_by:session.user.id, reviewed_at:new Date().toISOString() } },
+    fund_rechazar_contab: { evt:'rechazar',      status:'rechazado',             title:'Rechazar solicitud',   note:'Motivo del rechazo', required:true, patch:{ reviewed_by:session.user.id, reviewed_at:new Date().toISOString() } },
+    fund_pagar:           { evt:'pagar',         status:'pagado',                title:'Confirmar entrega de fondos', note:'Referencia/comprobante (opcional)', required:false, patch:{ paid_by:session.user.id, paid_at:new Date().toISOString() } },
+    fund_rechazar_teso:   { evt:'rechazar_teso', status:'rechazado_tesoreria',   title:'Rechazar entrega',     note:'Motivo del rechazo', required:true, patch:{ paid_by:session.user.id, paid_at:new Date().toISOString() } },
+    fund_justificar:      { evt:'justificar',    status:'justificado',           title:'Cerrar carga de recibos', note:'Observación (opcional)', required:false, patch:{ justified_at:new Date().toISOString() } },
+    fund_saldar:          { evt:'saldar',        status:'saldado',               title:'Cerrar balance', note:'Comentario (ej: colaborador ya devolvió los B/. 32.50)', required:true, patch:{ balance_closed_by:session.user.id, balance_closed_at:new Date().toISOString() } }
+  };
+  const cfg = promptMap[act];
+  if(!cfg) return;
+  openModal(cfg.title, `
+    <div class="field">
+      <label>${esc(cfg.note)}${cfg.required?' <span class="req">*</span>':''}</label>
+      <textarea class="textarea" id="act-note" placeholder=""></textarea>
+    </div>
+    <button class="btn btn-primary btn-block" id="act-btn">Confirmar</button>
+  `);
+  $('#act-btn').onclick = async ()=>{
+    const note = $('#act-note').value.trim();
+    if(cfg.required && !note){ toast('Falta la nota','warn'); return; }
+    const patch = { ...cfg.patch };
+    if(cfg.status==='corregir' || cfg.status==='rechazado' || cfg.status==='rechazado_tesoreria'){
+      patch.review_notes = note;
+    }
+    if(cfg.status==='pagado'){
+      patch.payment_ref = note;
+    }
+    if(cfg.status==='saldado'){
+      const bal = computeBalance(f);
+      patch.balance_kind = bal.kind;
+      patch.balance_diff = bal.diff;
+      patch.balance_notes = note;
+    }
+    closeModal();
+    await changeFundStatus(f, cfg.status, cfg.evt, note, patch);
+    toast('Acción registrada','ok');
+    render();
+  };
+}
+
+async function changeFundStatus(f, toStatus, evtType, note, patchExtra){
+  showLoader();
+  try{
+    const patch = { status: toStatus, updated_at: new Date().toISOString(), ...(patchExtra||{}) };
+    const up = await cloud.updateFundRequest(f.id, patch);
+    if(up.error) throw up.error;
+    const idx = state.fundRequests.findIndex(x=>x.id===f.id);
+    if(idx>=0) state.fundRequests[idx] = up.data;
+    saveState();
+    await addFundEvent(f.id, evtType, f.status, toStatus, note);
+    refreshBandejaBadge();
+  }catch(e){
+    console.error(e);
+    toast('Error: '+(e.message||e),'err');
+  }
+  hideLoader();
+}
+
+async function addFundEvent(fundId, event_type, from_status, to_status, note){
+  // Reutilizamos expense_events con un prefijo en expense_id para no crear tabla nueva
+  const row = {
+    expense_id: 'FUND:'+fundId,
+    actor_id: session.user.id,
+    actor_name: profile.name,
+    actor_role: profile.role,
+    event_type, from_status, to_status, note: note||null
+  };
+  try{ await cloud.insertEvent(row); }catch(e){}
+  state.events.push({ ...row, created_at:new Date().toISOString() });
+  saveState();
+}
+
+function startGastoForFund(fundId){
+  // arranca el wizard de gasto pre-vinculado a un fondo
+  window._prefillFundId = fundId;
+  startNewRequest();
+}
+
+async function markItemOk(expenseId, kind){
+  // Opcionalmente pedir nota; con prompt simple para no crear otro modal
+  const note = (prompt(kind==='ok' ? 'Nota (opcional):' : '¿Qué falta revisar?', '') || '').trim();
+  if(kind==='revisar' && !note){ toast('Ingresá qué revisar','warn'); return; }
+  showLoader();
+  try{
+    const now = new Date().toISOString();
+    const patch = { item_ok: kind, item_ok_by: session.user.id, item_ok_at: now, item_ok_note: note || null };
+    const up = await cloud.updateRequest(expenseId, patch);
+    if(up.error) throw up.error;
+    const idx = state.requests.findIndex(x=>x.id===expenseId);
+    if(idx>=0) state.requests[idx] = up.data;
+    saveState();
+    await addEvent(expenseId, kind==='ok'?'item_ok':'item_revisar', null, null, note || null);
+    toast(kind==='ok'?'Marcado como OK':'Marcado a revisar','ok');
+    render();
+  }catch(e){
+    console.error(e); toast('Error: '+(e.message||e),'err');
+  }
+  hideLoader();
+}
+
+/* ============================================================
+   FAB · Menú "nueva solicitud" (fondos o gasto)
+   ============================================================ */
+function openNewMenu(){
+  openModal('¿Qué querés crear?', `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-primary btn-block" onclick="closeModal();startNewFund()">
+        <svg viewBox="0 0 24 24"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/></svg>
+        Solicitud de fondos <small style="opacity:.85;font-weight:400;margin-left:6px">(pedir plata por adelantado)</small>
+      </button>
+      <button class="btn btn-secondary btn-block" onclick="closeModal();startNewRequest()">
+        <svg viewBox="0 0 24 24"><path d="M6 3h9l6 6v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v6h6"/></svg>
+        Gasto / Reembolso <small style="opacity:.85;font-weight:400;margin-left:6px">(recibo, ya se gastó)</small>
+      </button>
+    </div>
+  `);
+}
+
 /* ============ DEMO reset ============ */
 function openAllDemoCreds(){
   const rows = DEMO_USERS.map(u=>{
@@ -3580,6 +4407,8 @@ function go(name){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
+  const lv = $('#login-version'); if(lv) lv.textContent = APP_VERSION + ' · ' + APP_UPDATED;
+  document.title = 'Gastos PDG · ' + APP_VERSION;
   $('#login-btn').onclick = async ()=>{
     const email = $('#login-email').value.trim().toLowerCase();
     const pass  = $('#login-pass').value;
@@ -3606,7 +4435,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $$('#bottomnav button[data-nav]').forEach(b=>{
     b.onclick = ()=>{
       const nav = b.dataset.nav;
-      if(nav === 'new'){ startNewRequest(); return; }
+      if(nav === 'new'){ openNewMenu(); return; }
       go(nav);
     };
   });
@@ -3654,6 +4483,15 @@ window.clearDownloadFilters = clearDownloadFilters;
 window.clearDownloadSelection = clearDownloadSelection;
 window.startZipDownload = startZipDownload;
 window.closeLightbox = closeLightbox;
+window.openNewMenu = openNewMenu;
+window.startNewFund = startNewFund;
+window.saveFundDraft = saveFundDraft;
+window.submitFundWizard = submitFundWizard;
+window.cancelFundWizard = cancelFundWizard;
+window.runFundAction = runFundAction;
+window.openFundDetail = openFundDetail;
+window.startGastoForFund = startGastoForFund;
+window.markItemOk = markItemOk;
 </script>
 </body>
 </html>

@@ -2065,12 +2065,7 @@ async function renderDetail(root, id){
         ${esc(r.review_notes)}
       </div>` : ''}
 
-    ${linkedFund ? `
-      <div class="card" style="border-left:4px solid #6366f1;background:#eef2ff;cursor:pointer" onclick="openFundDetail('${esc(linkedFund.id)}')">
-        <strong>🔗 Vinculado a solicitud de fondos:</strong>
-        ${esc(linkedFund.number||linkedFund.id)} · ${esc(linkedFund.purpose||'').slice(0,80)}
-        <br><small style="color:var(--muted)">Solicitado ${fmtMoney(linkedFund.requested_amount)} · Ver detalle ▸</small>
-      </div>` : ''}
+    ${renderExpenseFundLinkCard(r, linkedFund)}
 
     ${canMarkOk ? `
       <div class="card" style="border-left:4px solid ${r.item_ok==='ok'?'var(--ok)':r.item_ok==='revisar'?'var(--warn)':'var(--info)'}">
@@ -3963,9 +3958,13 @@ function renderFundDetail(root, id){
       </h3>
       <div id="fund-gastos-list"></div>
       ${gastos.length===0?'<p style="color:var(--muted);font-size:13px;margin:8px 0 0">Sin recibos cargados aún.</p>':''}
-      ${mine && f.status==='pagado' ? `<button class="btn btn-outline btn-block" style="margin-top:10px" onclick="startGastoForFund('${esc(f.id)}')">
+      ${(mine || canReviewAny()) && f.status==='pagado' ? `<button class="btn btn-outline btn-block" style="margin-top:10px" onclick="startGastoForFund('${esc(f.id)}')">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-        Agregar recibo/gasto
+        Cargar nuevo recibo/gasto
+      </button>
+      <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="openLinkExistingGastoModal('${esc(f.id)}')">
+        <svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 1 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 1 0 7 7l1-1"/></svg>
+        Vincular gasto ya cargado
       </button>`:''}
     </div>
 
@@ -4328,6 +4327,185 @@ function startGastoForFund(fundId){
   startNewRequest();
 }
 
+function renderExpenseFundLinkCard(r, linkedFund){
+  const mine = r.requester_id === session.user.id;
+  // Quién puede vincular/desvincular:
+  //  - Dueño mientras esté en borrador/corregir (RLS del colaborador)
+  //  - Contabilidad / tesorería / super_admin en cualquier estado
+  const canEditLink = (mine && ['borrador','corregir'].includes(r.status)) || canReviewAny();
+
+  if(linkedFund){
+    return `<div class="card" style="border-left:4px solid #6366f1;background:#eef2ff">
+      <h3 class="section-title" style="color:#3730a3;margin-bottom:8px">
+        <svg viewBox="0 0 24 24" style="stroke:#3730a3"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/></svg>
+        🔗 Vinculado a solicitud de fondos
+      </h3>
+      <div style="cursor:pointer" onclick="openFundDetail('${esc(linkedFund.id)}')">
+        <strong>${esc(linkedFund.number||linkedFund.id)}</strong> · ${esc((linkedFund.purpose||'').slice(0,80))}
+        <br><small style="color:var(--muted)">
+          Solicitado ${fmtMoney(linkedFund.requested_amount)} ·
+          Este gasto (${fmtMoney(r.total)}) se descuenta del balance · Ver detalle ▸
+        </small>
+      </div>
+      ${canEditLink ? `<button class="btn btn-outline btn-block" style="margin-top:10px" onclick="unlinkExpense('${esc(r.id)}')">
+        🔓 Desvincular de este fondo
+      </button>` : ''}
+    </div>`;
+  }
+
+  // No vinculado: mostrar opción de vincular si el usuario puede editar
+  if(!canEditLink) return '';
+
+  // Fondos disponibles: propios del solicitante (o cualquiera si soy super/contab) en estado 'pagado'
+  const openFunds = (state.fundRequests||[]).filter(f => {
+    if(f.status !== 'pagado') return false;
+    if(mine) return f.requester_id === session.user.id;
+    return true; // revisor puede vincular a cualquier fondo pagado
+  });
+  if(openFunds.length === 0) return '';
+
+  const options = openFunds.map(f =>
+    `<option value="${esc(f.id)}">${esc(f.number||f.id)} · ${esc((f.purpose||'').slice(0,50))} · ${fmtMoney(f.requested_amount)}${f.requester_id!==r.requester_id?' · '+esc(f.requester_name||''):''}</option>`
+  ).join('');
+
+  return `<div class="card" style="border-left:4px solid #6366f1;background:#eef2ff">
+    <h3 class="section-title" style="color:#3730a3">
+      <svg viewBox="0 0 24 24" style="stroke:#3730a3"><path d="M3 7h18v10H3z"/><path d="M7 7v10M17 7v10"/></svg>
+      Vincular a solicitud de fondos
+    </h3>
+    <p style="margin:0 0 10px;color:var(--muted);font-size:13px">
+      Vinculá este gasto (${fmtMoney(r.total)}) a un fondo pagado. El balance del fondo se recalcula automáticamente.
+    </p>
+    <div class="field">
+      <label>Solicitud de fondos</label>
+      <select class="select" id="link-fund-sel">
+        <option value="">— Elegí un fondo —</option>
+        ${options}
+      </select>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="linkExpenseToFund('${esc(r.id)}')">
+      🔗 Vincular al fondo seleccionado
+    </button>
+  </div>`;
+}
+
+async function linkExpenseToFund(expenseId){
+  const sel = $('#link-fund-sel');
+  const fundId = sel ? sel.value : '';
+  if(!fundId){ toast('Elegí un fondo','warn'); return; }
+  const f = (state.fundRequests||[]).find(x => x.id === fundId);
+  if(!f){ toast('Fondo no encontrado','err'); return; }
+  const r = state.requests.find(x => x.id === expenseId);
+  if(!r) return;
+  if(!confirm(`Vincular este gasto (${fmtMoney(r.total)}) al fondo ${f.number||f.id} — "${(f.purpose||'').slice(0,60)}"?`)) return;
+  showLoader();
+  try{
+    const up = await cloud.updateRequest(expenseId, { fund_request_id: fundId });
+    if(up.error) throw up.error;
+    const idx = state.requests.findIndex(x=>x.id===expenseId);
+    if(idx>=0) state.requests[idx] = up.data;
+    saveState();
+    await addEvent(expenseId, 'vincular_fondo', null, null, `Vinculado a ${f.number||f.id}`);
+    toast('Vinculado al fondo','ok');
+    render();
+  }catch(e){
+    console.error(e); toast('Error: '+(e.message||e),'err');
+  }
+  hideLoader();
+}
+
+function openLinkExistingGastoModal(fundId){
+  const f = (state.fundRequests||[]).find(x=>x.id===fundId);
+  if(!f) return;
+  // Gastos ya cargados sin vínculo, del mismo colaborador (o cualquiera si soy revisor)
+  const candidates = state.requests.filter(r => {
+    if(r.fund_request_id) return false;
+    if(canReviewAny()) return true;
+    return r.requester_id === session.user.id;
+  });
+  if(candidates.length === 0){
+    openModal('Vincular gasto existente', `
+      <p style="color:var(--muted)">No hay gastos sin vincular disponibles.</p>
+      <p style="color:var(--muted);font-size:13px">Cargá primero un gasto (con el botón "+" del menú) o cargalo directamente desde este fondo con "Cargar nuevo recibo/gasto".</p>
+    `);
+    return;
+  }
+  // Ordenar por fecha desc
+  candidates.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+  const rows = candidates.map(r => {
+    const st = STATUS_META[r.status] || { label:r.status, icon:'' };
+    return `<label style="display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer">
+      <input type="radio" name="lg-radio" value="${esc(r.id)}" style="margin-top:4px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <strong style="color:var(--brand-2)">${esc(r.number||r.id)}</strong>
+          <strong>${fmtMoney(r.total)}</strong>
+        </div>
+        <div style="font-size:13px">${esc(r.description||r.provider_name||'Gasto')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          <span class="badge badge-${r.status}" style="font-size:10px">${st.icon} ${st.label}</span>
+          · 📅 ${fmtDate(r.expense_date)}
+          ${r.requester_name && r.requester_id!==session.user.id?' · 👤 '+esc(r.requester_name):''}
+        </div>
+      </div>
+    </label>`;
+  }).join('');
+  openModal('Vincular gasto existente al fondo '+(f.number||f.id), `
+    <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+      Elegí uno de tus gastos ya cargados sin vínculo. Se descontará del balance de este fondo.
+    </p>
+    <div style="max-height:50vh;overflow-y:auto">${rows}</div>
+    <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="confirmLinkExisting('${esc(fundId)}')">
+      Vincular gasto seleccionado
+    </button>
+  `);
+}
+
+async function confirmLinkExisting(fundId){
+  const sel = document.querySelector('input[name="lg-radio"]:checked');
+  if(!sel){ toast('Elegí un gasto','warn'); return; }
+  const expenseId = sel.value;
+  const r = state.requests.find(x=>x.id===expenseId);
+  const f = (state.fundRequests||[]).find(x=>x.id===fundId);
+  if(!r || !f) return;
+  closeModal();
+  showLoader();
+  try{
+    const up = await cloud.updateRequest(expenseId, { fund_request_id: fundId });
+    if(up.error) throw up.error;
+    const idx = state.requests.findIndex(x=>x.id===expenseId);
+    if(idx>=0) state.requests[idx] = up.data;
+    saveState();
+    await addEvent(expenseId, 'vincular_fondo', null, null, `Vinculado a ${f.number||f.id}`);
+    toast(`Vinculado: ${fmtMoney(r.total)} descontado del balance`,'ok');
+    render();
+  }catch(e){
+    console.error(e); toast('Error: '+(e.message||e),'err');
+  }
+  hideLoader();
+}
+
+async function unlinkExpense(expenseId){
+  const r = state.requests.find(x => x.id === expenseId);
+  if(!r) return;
+  const f = r.fund_request_id ? (state.fundRequests||[]).find(x=>x.id===r.fund_request_id) : null;
+  if(!confirm(`Desvincular este gasto del fondo ${f?.number||''}? El balance del fondo se recalcula.`)) return;
+  showLoader();
+  try{
+    const up = await cloud.updateRequest(expenseId, { fund_request_id: null });
+    if(up.error) throw up.error;
+    const idx = state.requests.findIndex(x=>x.id===expenseId);
+    if(idx>=0) state.requests[idx] = up.data;
+    saveState();
+    await addEvent(expenseId, 'desvincular_fondo', null, null, f?`Desvinculado de ${f.number||f.id}`:null);
+    toast('Gasto desvinculado','ok');
+    render();
+  }catch(e){
+    console.error(e); toast('Error: '+(e.message||e),'err');
+  }
+  hideLoader();
+}
+
 async function markItemOk(expenseId, kind){
   // Opcionalmente pedir nota; con prompt simple para no crear otro modal
   const note = (prompt(kind==='ok' ? 'Nota (opcional):' : '¿Qué falta revisar?', '') || '').trim();
@@ -4518,6 +4696,10 @@ window.runFundAction = runFundAction;
 window.openFundDetail = openFundDetail;
 window.startGastoForFund = startGastoForFund;
 window.markItemOk = markItemOk;
+window.linkExpenseToFund = linkExpenseToFund;
+window.unlinkExpense = unlinkExpense;
+window.openLinkExistingGastoModal = openLinkExistingGastoModal;
+window.confirmLinkExisting = confirmLinkExisting;
 </script>
 </body>
 </html>

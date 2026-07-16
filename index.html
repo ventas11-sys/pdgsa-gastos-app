@@ -2010,11 +2010,12 @@ async function persistWizard(nextStatus, submit){
   showLoader();
   try{
     // primera creación → asignar número
+    //   JF-  → Justificativo de Fondo (nace vinculado a una SF)
+    //   SP-  → Solicitud de Pago / reembolso libre
     const existing = state.requests.find(r=>r.id===wizardDraft.id);
     if(!existing){
-      const now = new Date();
-      const seq = state.requests.length + 1;
-      wizardDraft.number = 'SP-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + String(seq).padStart(4,'0');
+      const prefix = wizardDraft.fund_request_id ? 'JF' : 'SP';
+      wizardDraft.number = nextExpenseNumber(prefix);
     }
     wizardDraft.status = nextStatus;
     if(submit) wizardDraft.submitted_at = new Date().toISOString();
@@ -3284,9 +3285,12 @@ function renderReportGroupCard(g){
     .sort((a,b)=>(b.expense_date||'').localeCompare(a.expense_date||''))
     .map(r=>{
       const st = STATUS_META[r.status] || { label:r.status, icon:'' };
+      const isJF = r._type==='gasto' && (r.number||'').startsWith('JF-');
       const typeChip = r._type==='fondo'
         ? `<span style="background:#eef2ff;color:#3730a3;padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600">📦 SF</span>`
-        : `<span style="background:var(--brand-soft);color:var(--brand-2);padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600">📄 SP</span>`;
+        : isJF
+          ? `<span style="background:#ecfeff;color:#155e75;padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600">🧾 JF</span>`
+          : `<span style="background:var(--brand-soft);color:var(--brand-2);padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600">📄 SP</span>`;
       return `<div class="rep-item" data-open="${esc(r.id)}" data-type="${r._type}">
         <div>
           <div class="title">${typeChip} ${esc(r.number||'')} · ${esc(r.description || r.provider_name || 'Solicitud')}</div>
@@ -3348,8 +3352,11 @@ function downloadReportCSV(){
   const accountTypeLabel = t => t==='ahorro'?'Caja de ahorro':t==='corriente'?'Cuenta corriente':'';
   const body = rows.map(r=>{
     const pd = r.data?.payment_details || {};
+    const kind = r._type==='fondo' ? 'Fondo (SF)'
+               : (r.number||'').startsWith('JF-') ? 'Justificativo (JF)'
+               : 'Gasto (SP)';
     return [
-      r._type==='fondo'?'Fondo':'Gasto',
+      kind,
       r.number, r.expense_date, r.requester_name,
       r.project_name, r.company_name, r.company_ruc,
       r.provider_name, r.provider_ruc, r.provider_dv, r.description,
@@ -3956,6 +3963,21 @@ function nextFundNumber(){
   const prefix = 'SF-'+yyyymm+'-';
   const nums = (state.fundRequests||[])
     .map(f => (f.number||''))
+    .filter(n => n.startsWith(prefix))
+    .map(n => parseInt(n.slice(prefix.length),10))
+    .filter(n => !isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return prefix + String(next).padStart(4,'0');
+}
+
+// Genera el siguiente número de gasto con prefijo separado:
+//   'SP' → Solicitud de Pago (reembolso libre)
+//   'JF' → Justificativo de Fondo (vinculado a un SF-)
+function nextExpenseNumber(kindPrefix){
+  const yyyymm = new Date().toISOString().slice(0,7).replace('-','');
+  const prefix = kindPrefix + '-' + yyyymm + '-';
+  const nums = (state.requests||[])
+    .map(r => (r.number||''))
     .filter(n => n.startsWith(prefix))
     .map(n => parseInt(n.slice(prefix.length),10))
     .filter(n => !isNaN(n));
